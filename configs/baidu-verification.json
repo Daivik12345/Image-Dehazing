@@ -1,0 +1,16 @@
+{
+  "origin": "User-supplied Baidu files; verified by streaming SHA-256",
+  "verified_on": "2026-11-04",
+  "files": {
+    "stage1.pt": {
+      "bytes": 1452743609,
+      "sha256": "07e8c56b6bdf5f616d85bfc24e3e652c2bb74884c89cfc25756ee4f27ecbebe3",
+      "identical_to_previously_downloaded_mirror": true
+    },
+    "stage2.pt": {
+      "bytes": 1452743609,
+      "sha256": "d7dada8b659c1554b58b0f6f1353e9bac80849191094307f45de0303ebe962da",
+      "identical_to_previously_downloaded_mirror": true
+    }
+  }
+}

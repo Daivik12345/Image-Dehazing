@@ -1,0 +1,13 @@
+# Isolated Python 3.10 inference runtime. No CUDA-only xformers or training packages.
+# PyTorch 2.6 adds scoped safe metadata handling for legacy SD checkpoints.
+# PyTorch's native scaled-dot-product attention is supported by the upstream code.
+numpy==1.26.4
+torch==2.6.0
+einops==0.7.0
+omegaconf==2.3.0
+ftfy==6.2.0
+regex==2023.12.25
+packaging>=23
+Pillow>=10,<12
+tqdm>=4.66
+scipy==1.12.0

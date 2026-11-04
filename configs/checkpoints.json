@@ -1,0 +1,20 @@
+{
+  "v2-1_512-ema-pruned.ckpt": {
+    "bytes": 5214865159,
+    "sha256": "88ecb782561455673c4b78d05093494b9c539fc6bfc08f3a9a4a0dd7b0b10f36",
+    "source": "https://huggingface.co/sd-research/stable-diffusion-2-1-base/resolve/main/v2-1_512-ema-pruned.ckpt",
+    "provenance": "Community mirror linked from upstream issue 12. Hash verifies mirror bytes."
+  },
+  "stage1.pt": {
+    "bytes": 1452743609,
+    "sha256": "07e8c56b6bdf5f616d85bfc24e3e652c2bb74884c89cfc25756ee4f27ecbebe3",
+    "source": "https://huggingface.co/DJKAD/Learning-Hazing-to-Dehazing/resolve/f6d334fcb867542118f6bc64cdf8c7812581fc37/stage1.pt",
+    "provenance": "Bytes match the user-supplied Baidu checkpoint verified on 2026-11-04. Original download source retained for provenance."
+  },
+  "stage2.pt": {
+    "bytes": 1452743609,
+    "sha256": "d7dada8b659c1554b58b0f6f1353e9bac80849191094307f45de0303ebe962da",
+    "source": "https://huggingface.co/DJKAD/Learning-Hazing-to-Dehazing/resolve/f6d334fcb867542118f6bc64cdf8c7812581fc37/stage2.pt",
+    "provenance": "Bytes match the user-supplied Baidu checkpoint verified on 2026-11-04. Original download source retained for provenance."
+  }
+}

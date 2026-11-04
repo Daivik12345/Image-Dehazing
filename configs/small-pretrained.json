@@ -1,0 +1,11 @@
+{
+  "backend": "pretrained",
+  "stage": "both",
+  "size": 256,
+  "steps": 10,
+  "seed": 42,
+  "blend": 0.85,
+  "sampler": "spaced",
+  "device": "auto",
+  "preview_every": 2
+}

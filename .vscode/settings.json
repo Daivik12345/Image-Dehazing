@@ -1,0 +1,37 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "notebook.formatOnSave.enabled": true,
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "search.exclude": {
+    "**/.venv/**": true,
+    "**/data/**": true,
+    "**/outputs/**": true,
+    "**/checkpoints/**": true
+  },
+  "files.watcherExclude": {
+    "**/data/**": true,
+    "**/outputs/**": true,
+    "**/checkpoints/**": true
+  },
+
+
+
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 2000,
+
+  "gitdoc.commitValidationLevel": "error",
+  "gitdoc.excludeBranches": ["main", "master"]
+}

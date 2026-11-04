@@ -1,0 +1,7 @@
+{
+  "backend": "preview",
+  "stage": "both",
+  "size": 128,
+  "steps": 5,
+  "seed": 42
+}
