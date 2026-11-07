@@ -6,7 +6,7 @@ with HazeGen, DiffDehaze, a live local viewer, and a Kaggle CUDA reference noteb
 ## Start on Kaggle
 
 1. Read the [step-by-step Kaggle guide](docs/KAGGLE.md).
-2. Import [kaggle_reference.ipynb](notebooks/kaggle_reference.ipynb).
+2. Use [btp-baseline+](notebooks/btp-baseline-plus.ipynb) for the tested low-memory T4 workflow. The previous [reference baseline](notebooks/kaggle_reference.ipynb) remains available unchanged.
 3. Upload `stage1.pt`, `stage2.pt`, and `v2-1_512-ema-pruned.ckpt` as a private
    Kaggle dataset. See [checkpoint instructions](weights/README.md).
 4. Build the source ZIP with `uv run python -m btp.kaggle` and upload
@@ -67,8 +67,7 @@ uv run pytest
 - The supplied Baidu stage files match the recorded checkpoint hashes.
 - Local reduced-resolution pretrained runs completed but showed severe artifacts.
 - Native inference was impractically slow on the local 8 GiB Mac.
-- The Kaggle notebook is prepared; Kaggle GPU results and paper benchmark scores
-  have **not** been produced or claimed.
+- The low-memory notebook completed HazeGen, standard DiffDehaze, AccSamp and the roundtrip on a Tesla T4. Peak allocated memory was 8.887 GiB for AccSamp and 11.769 GiB for the roundtrip. These are example runs, not paper benchmark scores.
 - No training or paid compute has been launched.
 
 Weights, environments, private datasets, caches and generated run outputs are
@@ -79,3 +78,11 @@ not committed. The approximately 8.12 GB of checkpoints must be supplied separat
 Original paper and source: [ruiyi-w/Learning-Hazing-to-Dehazing](https://github.com/ruiyi-w/Learning-Hazing-to-Dehazing).
 The original source's [Apache-2.0 license](upstream/Learning-Hazing-to-Dehazing/LICENSE)
 is preserved. The example photograph attribution is in [examples/README.md](examples/README.md).
+
+## Notebook versions
+
+- [Previous baseline](notebooks/kaggle_reference.ipynb): preserved original notebook.
+- [btp-baseline+](notebooks/btp-baseline-plus.ipynb): CPU offloading with float32, original geometry and 50 steps; safe rerun output names and robust source restoration.
+- [Live Kaggle notebook](https://www.kaggle.com/code/cubingultimate/btp-baseline): display title `btp-baseline+`.
+
+The plus notebook attaches `cubingultimate/btp-source` and `cubingultimate/btp-paper-weights-2`. These datasets are private; other users must supply their own source and checkpoints. The updated runner and source bundler are included here. See [the guide](docs/KAGGLE.md) for measured memory and limitations.

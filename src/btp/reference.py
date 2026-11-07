@@ -51,12 +51,14 @@ def run_reference(
     seed: int,
     dataset_version: str,
     preview_every: int = 10,
+    low_memory: bool = False,
 ) -> None:
     """Run one CUDA reference image, preserving upstream resize, padding and sampler.
 
     Compatibility changes are restricted checkpoint loading, fixed RNG seeds,
     progress logging and optional diagnostic latent decodes. No mixed precision,
-    AlignOp patch, image size cap, text-encoder removal, or sampler changes apply.
+    AlignOp patch, image size cap, or sampler changes apply. Optional low-memory
+    mode freezes weights and offloads idle modules, retaining latent gradients.
     """
     if mode not in SCRIPTS or not 0 <= seed < 2**32 or preview_every < 0:
         raise ValueError("Invalid mode, seed, or preview interval")
@@ -108,6 +110,12 @@ def run_reference(
         "seed": seed,
         "steps": 50,
         "precision": "float32",
+        "low_memory": low_memory,
+        "memory_strategy": (
+            "frozen weights; CLIP CPU after conditioning; denoisers CPU during guidance"
+            if low_memory
+            else "original model residency"
+        ),
         "source_commit": revision(UPSTREAM) or (snapshot or {}).get("upstream_commit"),
         "source_snapshot": snapshot,
         "input_source": str(image),
@@ -135,11 +143,26 @@ def run_reference(
     from diffbir.sampler import SpacedSampler
 
     original_step = SpacedSampler.p_sample
+    original_guidance = SpacedSampler.apply_cond_fn
     original_load = torch.load
     calls = 0
 
+    def guidance(sampler, model, *args, **kwargs):
+        if not low_memory:
+            return original_guidance(sampler, model, *args, **kwargs)
+        from btp.memory import offload_denoisers
+
+        with offload_denoisers(model):
+            torch.cuda.empty_cache()
+            return original_guidance(sampler, model, *args, **kwargs)
+
     def step(sampler, model, *args, **kwargs):
         nonlocal calls
+        if low_memory and calls == 0:
+            from btp.memory import prepare_low_memory
+
+            prepare_low_memory(model)
+            torch.cuda.empty_cache()
         result = original_step(sampler, model, *args, **kwargs)
         calls += 1
         state = {"state": "running", "mode": mode, "sampler_calls": calls}
@@ -173,6 +196,7 @@ def run_reference(
         with (
             patch.object(torch, "load", checkpoint_load),
             patch.object(SpacedSampler, "p_sample", step),
+            patch.object(SpacedSampler, "apply_cond_fn", guidance),
         ):
             with patch.object(
                 sys, "argv", [script, "--config", str(output / "config.yaml")]
@@ -189,6 +213,9 @@ def run_reference(
         write_json(
             output / "status.json", {"state": "completed", "sampler_calls": calls}
         )
+        manifest["peak_gpu_allocated_bytes"] = torch.cuda.max_memory_allocated()
+        manifest["peak_gpu_reserved_bytes"] = torch.cuda.max_memory_reserved()
+        write_json(output / "manifest.json", manifest)
     except BaseException as error:
         write_json(output / "status.json", {"state": "failed", "error": str(error)})
         raise
@@ -204,6 +231,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--dataset-version", required=True)
     parser.add_argument("--preview-every", type=int, default=10)
+    parser.add_argument("--low-memory", action="store_true")
     args = parser.parse_args()
     run_reference(
         args.input,
@@ -213,6 +241,7 @@ def main() -> None:
         args.seed,
         args.dataset_version,
         args.preview_every,
+        args.low_memory,
     )
 
 

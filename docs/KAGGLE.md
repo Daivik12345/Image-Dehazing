@@ -34,9 +34,9 @@ The notebook to import is `notebooks/kaggle_reference.ipynb`.
 
 Upload the following three model files together, with these exact names:
 
-1. `weights/stage1.pt`
-2. `weights/stage2.pt`
-3. `weights/v2-1_512-ema-pruned.ckpt`
+1. `/Users/cubingultimate/Downloads/Learning Hazing to Dehazing/stage1.pt`
+2. `/Users/cubingultimate/Downloads/Learning Hazing to Dehazing/stage2.pt`
+3. `/Users/cubingultimate/Desktop/BTP/weights/v2-1_512-ema-pruned.ckpt`
 
 The three weights total about 8.12 GB. Uploading them directly avoids spending
 notebook time downloading them again. The source archive excludes weights,
@@ -218,3 +218,45 @@ code, but it does not ship a complete implementation of the paper's metric suite
 
 No training, evaluation-dataset download, paid GPU job, or Kaggle account action
 has been performed while preparing these files.
+
+## Low-memory execution (T4 experimental mode)
+
+The notebook now passes `--low-memory` to `btp.reference`. This preserves the
+pretrained weights, float32 arithmetic, original geometry and 50-step schedule.
+It is not a smaller architecture and has not yet demonstrated paper-level results.
+The default CLI reference remains unchanged without that flag.
+
+After prompt embeddings are built, CLIP moves to CPU. All model parameters are
+frozen while AccSamp still computes gradients with respect to its latent input.
+During each fidelity-guidance call, the UNet and ControlNet temporarily move to
+CPU and return afterward, freeing GPU capacity for the VAE backward pass.
+Host RAM and CPU/GPU transfer overhead increase; actual fit and speed need a GPU run.
+Diagnostic previews are disabled initially to avoid extra VAE decoding overhead.
+Completed run manifests record the mode and peak allocated/reserved GPU bytes.
+
+Run `scripts/smoke_memory.py` in the inference environment before inference. It
+checks output/latent-gradient equivalence on a tiny CPU network; it does not
+establish full-model CUDA equivalence or memory feasibility.
+
+### Verified T4 run: notebook version 7
+
+The low-memory notebook completed on Kaggle Tesla T4, using PyTorch 2.6.0+cu118,
+float32, seed 42, the original 50-step schedule and upstream geometry. All four
+status files report completion and manifests identify `low_memory: true`.
+
+| Case | Size before padding | Sampler calls | Peak allocated GiB | Peak reserved GiB |
+|---|---|---|---|---|
+| HazeGen | 767 x 512 | 50 | 7.597 | 7.764 |
+| Standard DiffDehaze | 573 x 512 | 50 | 7.205 | 7.342 |
+| AccSamp | 573 x 512 | 40 | 8.887 | 10.936 |
+| HazeGen to AccSamp roundtrip | 767 x 512 | 40 | 11.769 | 14.049 |
+
+These are PyTorch per-process peak memory counters, not total device usage.
+Results were downloaded and inspected. Local evidence is under
+`artifacts/kaggle-v7-low-memory/`, including original manifests, status files,
+input/final images, logs, `verified-summary.json` and `comparison.png`.
+This is a successful qualitative run on two source images, not a benchmark or
+proof of unchanged full-model numerical output. Larger inputs remain untested.
+The roundtrip reserved peak is close to the device capacity; do not assume spare
+capacity for larger inputs or preview decodes. No model training or parameter-count
+reduction was performed.

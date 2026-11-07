@@ -40,7 +40,8 @@ def build_bundle(output: Path) -> dict:
         selected.append(UPSTREAM / "SOURCE.json")
         commit = provenance["commit"]
     selected.extend([ROOT / "examples/clean.png", ROOT / "examples/README.md"])
-    files = sorted(set(selected))
+    # Upstream tracks Finder metadata; upload services may omit these files.
+    files = sorted(path for path in set(selected) if path.name != ".DS_Store")
     snapshot = {
         "upstream_commit": commit,
         "files": {
