@@ -63,3 +63,24 @@ def test_selective_policy_moves_only_requested_modules():
     assert net.unet.device == "cuda:0"
     with pytest.raises(ValueError):
         policy_modules("invalid", True)
+
+
+def test_independent_cache_policies_preserve_legacy_defaults():
+    from btp.memory import resolve_cache_policy, should_empty_cache
+
+    assert resolve_cache_policy("M0", None) == "guidance"
+    assert resolve_cache_policy("M3", None) == "phase"
+    assert resolve_cache_policy("R0", None) == "never"
+    assert resolve_cache_policy("M2-U", "never") == "never"
+    for policy in ("guidance", "phase", "never"):
+        assert should_empty_cache(policy, "conditioning") == (policy != "never")
+        assert should_empty_cache(policy, "guidance", offloaded=True) == (
+            policy == "guidance"
+        )
+        assert not should_empty_cache(policy, "guidance", offloaded=False)
+    with pytest.raises(ValueError):
+        resolve_cache_policy("M0", "invalid")
+    with pytest.raises(ValueError):
+        resolve_cache_policy("R0", "guidance")
+    with pytest.raises(ValueError):
+        should_empty_cache("phase", "invalid")

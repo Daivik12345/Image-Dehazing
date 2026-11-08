@@ -6,6 +6,7 @@ import itertools
 import json
 import os
 import random
+import re
 import signal
 import subprocess
 import sys
@@ -28,7 +29,7 @@ from btp.evaluation import (
     sha256,
 )
 from btp.experiment import revision, write_json
-from btp.memory import POLICIES
+from btp.memory import CACHE_POLICIES, POLICIES, resolve_cache_policy
 
 
 def validate_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -36,6 +37,8 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     allowed = {
         "schema_version",
         "policies",
+        "variants",
+        "reference_variant",
         "seeds",
         "repeats",
         "modes",
@@ -50,7 +53,36 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     }
     if set(config) - allowed or config.get("schema_version") != 1:
         raise ValueError("Invalid config schema or unknown settings")
-    for name, choices in [("policies", POLICIES), ("modes", ("accsamp", "spaced"))]:
+    if ("policies" in config) == ("variants" in config):
+        raise ValueError("Specify exactly one of policies or variants")
+    if "variants" in config:
+        variants = config["variants"]
+        if not isinstance(variants, list) or not variants:
+            raise ValueError("Variants must be a nonempty list")
+        ids, combinations = set(), set()
+        for v in variants:
+            if not isinstance(v, dict) or set(v) != {"id", "policy", "cache_policy"}:
+                raise ValueError("Invalid variant schema")
+            if not isinstance(v["id"], str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", v["id"]
+            ):
+                raise ValueError("Invalid variant ID")
+            if v["cache_policy"] not in CACHE_POLICIES:
+                raise ValueError("Each variant needs an explicit cache policy")
+            cache = resolve_cache_policy(v["policy"], v["cache_policy"])
+            combination = (v["policy"], cache)
+            if v["id"] in ids or combination in combinations:
+                raise ValueError("Duplicate variant ID or placement/cache combination")
+            ids.add(v["id"])
+            combinations.add(combination)
+        if config.get("reference_variant") not in ids:
+            raise ValueError("reference_variant must name a declared variant")
+    elif "reference_variant" in config:
+        raise ValueError("reference_variant requires explicit variants")
+    fields = [("modes", ("accsamp", "spaced"))]
+    if "policies" in config:
+        fields.append(("policies", POLICIES))
+    for name, choices in fields:
         values = config.get(name)
         if (
             not isinstance(values, list)
@@ -137,11 +169,11 @@ def _mean(values: list[float]) -> float | None:
     return float(np.mean(values)) if values else None
 
 
-def summarize(jobs: list[dict]) -> dict:
+def summarize(jobs: list[dict], reference_variant: str = "M0") -> dict:
     """Aggregate scenes equally and compare only matched successful jobs."""
     groups = defaultdict(list)
     for job in jobs:
-        groups[job["policy"] + "/" + job["mode"]].append(job)
+        groups[job.get("variant", job["policy"]) + "/" + job["mode"]].append(job)
     policies, comparisons = {}, {}
     for key, rows in groups.items():
         good = [r for r in rows if r["status"] == "completed"]
@@ -192,11 +224,11 @@ def summarize(jobs: list[dict]) -> dict:
                 float(np.percentile(medians, 95)) if len(medians) >= 20 else None
             )
         policies[key] = stats
-        if key.startswith("M0/"):
+        if key == reference_variant + "/" + rows[0]["mode"]:
             continue
         baseline = {
             (r["scene_id"], r["seed"], r["repeat"]): r
-            for r in groups.get("M0/" + rows[0]["mode"], [])
+            for r in groups.get(reference_variant + "/" + rows[0]["mode"], [])
             if r["status"] == "completed"
         }
         pairs = [
@@ -205,11 +237,12 @@ def summarize(jobs: list[dict]) -> dict:
             if (r["scene_id"], r["seed"], r["repeat"]) in baseline
         ]
         comparison = {
+            "reference_variant": reference_variant,
             "common_success_pairs": len(pairs),
             "candidate_failed": len(rows) - len(good),
             "baseline_failed": sum(
                 r["status"] != "completed"
-                for r in groups.get("M0/" + rows[0]["mode"], [])
+                for r in groups.get(reference_variant + "/" + rows[0]["mode"], [])
             ),
             "scene_deltas": {},
         }
@@ -275,6 +308,10 @@ def run_matrix(
 ) -> dict:
     """Validate, run a bounded randomized matrix, then score outside inference."""
     config = validate_config(config)
+    variants = config.get("variants") or [
+        {"id": policy, "policy": policy, "cache_policy": resolve_cache_policy(policy)}
+        for policy in config["policies"]
+    ]
     manifest = load_manifest(manifest_path)
     scenes = [s for s in manifest["scenes"] if s["split"] == config["split"]]
     if config.get("scene_ids"):
@@ -287,7 +324,7 @@ def run_matrix(
         )
     count = (
         len(scenes)
-        * len(config["policies"])
+        * len(variants)
         * len(config["modes"])
         * len(config["seeds"])
         * config["repeats"]
@@ -317,9 +354,9 @@ def run_matrix(
     )
     write_json(output / "dataset-manifest.json", manifest)
     jobs = []
-    for scene, policy, mode, seed, repeat in itertools.product(
+    for scene, variant, mode, seed, repeat in itertools.product(
         scenes,
-        config["policies"],
+        variants,
         config["modes"],
         config["seeds"],
         range(config["repeats"]),
@@ -332,7 +369,9 @@ def run_matrix(
                 "geometry_tier": scene["geometry_tier"],
                 "input_sha256": scene["hazy_sha256"],
                 "target_sha256": scene["clean_sha256"],
-                "policy": policy,
+                "policy": variant["policy"],
+                "variant": variant["id"],
+                "cache_policy": variant["cache_policy"],
                 "mode": mode,
                 "seed": seed,
                 "repeat": repeat,
@@ -379,6 +418,8 @@ def run_matrix(
             "--memory-policy",
             job["policy"],
         ]
+        if "variants" in config:
+            command.extend(["--cache-policy", job["cache_policy"]])
         if job["profiled"]:
             command.append("--profile")
         job["command"] = command
@@ -407,6 +448,7 @@ def run_matrix(
                     "job": index + 1,
                     "total": count,
                     "policy": job["policy"],
+                    "variant": job["variant"],
                     "scene": job["scene_id"],
                     "status": job["status"],
                 }
@@ -451,12 +493,14 @@ def run_matrix(
         except Exception as error:
             job.update(status="invalid_output", error=str(error))
         persist()
-    summary = summarize(jobs)
+    summary = summarize(jobs, config.get("reference_variant", "M0"))
     write_json(output / "summary.json", summary)
     fields = [
         "job_id",
         "scene_id",
         "policy",
+        "variant",
+        "cache_policy",
         "mode",
         "seed",
         "repeat",

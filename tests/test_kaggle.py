@@ -71,3 +71,28 @@ def test_evaluation_notebook_is_separate_and_compiles():
         if cell["cell_type"] == "code":
             assert cell["execution_count"] is None and cell["outputs"] == []
             ast.parse("".join(cell["source"]))
+
+
+def test_offload_cache_notebook_and_configs_are_isolated():
+    from btp.benchmark import validate_config
+
+    notebook = json.loads((ROOT / "notebooks/btp-offload-cache.ipynb").read_text())
+    code = "\n".join(
+        "".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code"
+    )
+    assert "btp-offload-cache-source.bundle" in code
+    assert "btp-eval-source.bundle" not in code
+    assert "RUN_CACHE = False" in code and "RUN_CONFIRMATION = False" in code
+    assert "btp.optimization" in code
+    for cell in notebook["cells"]:
+        if cell["cell_type"] == "code":
+            assert not cell["outputs"] and cell["execution_count"] is None
+            ast.parse("".join(cell["source"]))
+    baseline = validate_config(
+        json.loads((ROOT / "configs/offload-cache/repeatability.json").read_text())
+    )
+    assert baseline["repeats"] == 3 and len(baseline["variants"]) == 1
+    screen = validate_config(
+        json.loads((ROOT / "configs/offload-cache/placement.json").read_text())
+    )
+    assert {v["policy"] for v in screen["variants"]} == {"M0", "M2-U", "M2-C", "M2-R"}

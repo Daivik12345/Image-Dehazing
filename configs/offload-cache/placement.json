@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "variants": [
+    {
+      "id": "M0-guidance",
+      "policy": "M0",
+      "cache_policy": "guidance"
+    },
+    {
+      "id": "M2-U-guidance",
+      "policy": "M2-U",
+      "cache_policy": "guidance"
+    },
+    {
+      "id": "M2-C-guidance",
+      "policy": "M2-C",
+      "cache_policy": "guidance"
+    },
+    {
+      "id": "M2-R-guidance",
+      "policy": "M2-R",
+      "cache_policy": "guidance"
+    }
+  ],
+  "reference_variant": "M0-guidance",
+  "scene_ids": [
+    "nh-haze-08",
+    "nh-haze-13"
+  ],
+  "seeds": [
+    42
+  ],
+  "repeats": 1,
+  "modes": [
+    "accsamp"
+  ],
+  "timeout_seconds": 480,
+  "max_jobs": 8,
+  "split": "development",
+  "execution": "cold",
+  "order_seed": 42,
+  "profile": false,
+  "lpips": false
+}

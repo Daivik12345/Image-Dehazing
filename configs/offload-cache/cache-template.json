@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "variants": [
+    {
+      "id": "M0-guidance",
+      "policy": "M0",
+      "cache_policy": "guidance"
+    },
+    {
+      "id": "M0-phase",
+      "policy": "M0",
+      "cache_policy": "phase"
+    },
+    {
+      "id": "M0-never",
+      "policy": "M0",
+      "cache_policy": "never"
+    }
+  ],
+  "reference_variant": "M0-guidance",
+  "scene_ids": [
+    "nh-haze-08",
+    "nh-haze-13"
+  ],
+  "seeds": [
+    42
+  ],
+  "repeats": 1,
+  "modes": [
+    "accsamp"
+  ],
+  "timeout_seconds": 480,
+  "max_jobs": 6,
+  "split": "development",
+  "execution": "cold",
+  "order_seed": 42,
+  "profile": false,
+  "lpips": false
+}

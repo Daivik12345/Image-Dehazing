@@ -204,3 +204,56 @@ def test_timeout_kills_group_after_leader_exits(tmp_path, monkeypatch):
     monkeypatch.setattr(benchmark.os, "killpg", lambda pid, sig: signals.append(sig))
     benchmark.execute_job({}, ["worker"], tmp_path / "log", 1)
     assert signals == [signal.SIGTERM, signal.SIGKILL]
+
+
+def variant_config():
+    return {
+        "schema_version": 1,
+        "variants": [
+            {"id": "control", "policy": "M2-U", "cache_policy": "guidance"},
+            {"id": "no-flush", "policy": "M2-U", "cache_policy": "never"},
+        ],
+        "reference_variant": "control",
+        "seeds": [42],
+        "repeats": 1,
+        "modes": ["accsamp"],
+        "timeout_seconds": 120,
+        "max_jobs": 2,
+        "split": "development",
+        "execution": "cold",
+    }
+
+
+def test_variants_validate_reference_and_unique_identity():
+    config = variant_config()
+    assert validate_config(config)["reference_variant"] == "control"
+    for bad in [
+        dict(config, policies=["M0"]),
+        dict(config, reference_variant="missing"),
+        dict(config, variants=[config["variants"][0]] * 2),
+        dict(
+            config, variants=[{"id": "x", "policy": "M2-U", "cache_policy": "invalid"}]
+        ),
+    ]:
+        with pytest.raises(ValueError):
+            validate_config(bad)
+
+
+def test_cache_variants_remain_separate_and_pair_to_declared_control(tmp_path):
+    manifest, _ = fixture_manifest(tmp_path)
+
+    def fake(job, command, log_path, timeout):
+        assert command[command.index("--cache-policy") + 1] == job["cache_policy"]
+        out = tmp_path / "result" / job["job_id"]
+        (out / "final").mkdir(parents=True)
+        shutil.copy2(tmp_path / "clean.png", out / "final/input.png")
+        (out / "status.json").write_text('{"state":"completed"}')
+        (out / "telemetry.json").write_text('{"sampling":{"wall_seconds":1}}')
+        return {"status": "completed", "returncode": 0}
+
+    result = run_matrix(
+        manifest, variant_config(), tmp_path, tmp_path / "result", executor=fake
+    )
+    assert set(result["policies"]) == {"control/accsamp", "no-flush/accsamp"}
+    assert result["comparisons"]["no-flush/accsamp"]["common_success_pairs"] == 1
+    assert result["comparisons"]["no-flush/accsamp"]["reference_variant"] == "control"

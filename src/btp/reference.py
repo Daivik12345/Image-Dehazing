@@ -16,7 +16,13 @@ from PIL import Image
 
 from btp.config import ROOT, UPSTREAM
 from btp.experiment import revision, write_json
-from btp.memory import POLICIES, policy_modules
+from btp.memory import (
+    CACHE_POLICIES,
+    POLICIES,
+    policy_modules,
+    resolve_cache_policy,
+    should_empty_cache,
+)
 
 SCRIPTS = {
     "hazegen": ("inference_stage1.py", "stage1.yaml", "stage1.pt"),
@@ -56,6 +62,7 @@ def run_reference(
     low_memory: bool = False,
     memory_policy: str | None = None,
     profile: bool = False,
+    cache_policy: str | None = None,
 ) -> None:
     """Run one CUDA reference image, preserving upstream resize, padding and sampler.
 
@@ -71,6 +78,9 @@ def run_reference(
         raise ValueError(
             "Invalid policy, or profiling without explicit evaluation policy"
         )
+    cache = resolve_cache_policy(policy, cache_policy)
+    if cache_policy is not None and memory_policy is None:
+        raise ValueError("Explicit cache policy requires an explicit memory policy")
     low_memory = policy != "R0"
     if output.exists():
         raise FileExistsError(f"Choose a new output directory: {output}")
@@ -122,6 +132,7 @@ def run_reference(
         "precision": "float32",
         "low_memory": low_memory,
         "memory_policy": policy,
+        "cache_policy": cache,
         "profiled": profile,
         "memory_strategy": (
             f"frozen weights; CLIP CPU after conditioning; placement policy {policy}"
@@ -198,7 +209,7 @@ def run_reference(
                     phase=monitor.phase if monitor else None,
                 ),
             ):
-                if modules and policy != "M3":
+                if should_empty_cache(cache, "guidance", offloaded=bool(modules)):
                     with monitor.phase("empty_cache") if monitor else nullcontext():
                         torch.cuda.empty_cache()
                 return original_guidance(sampler, model, *args, **kwargs)
@@ -212,7 +223,13 @@ def run_reference(
             from btp.memory import prepare_low_memory
 
             prepare_low_memory(model)
-            torch.cuda.empty_cache()
+            if should_empty_cache(cache, "conditioning"):
+                with (
+                    monitor.phase("empty_cache_conditioning")
+                    if monitor
+                    else nullcontext()
+                ):
+                    torch.cuda.empty_cache()
         result = original_step(sampler, model, *args, **kwargs)
         calls += 1
         if monitor:
@@ -361,6 +378,7 @@ def main() -> None:
     parser.add_argument("--low-memory", action="store_true")
     parser.add_argument("--memory-policy", choices=POLICIES)
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--cache-policy", choices=CACHE_POLICIES)
     args = parser.parse_args()
     run_reference(
         args.input,
@@ -373,6 +391,7 @@ def main() -> None:
         args.low_memory,
         args.memory_policy,
         args.profile,
+        args.cache_policy,
     )
 
 

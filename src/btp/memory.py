@@ -7,6 +7,36 @@ from typing import Any
 POLICIES = ("R0", "M0", "M1", "M2-U", "M2-C", "M2-R", "M3")
 
 
+CACHE_POLICIES = ("guidance", "phase", "never")
+
+
+def resolve_cache_policy(policy: str, requested: str | None = None) -> str:
+    """Resolve allocator flushing without changing historical placement defaults."""
+    if policy not in POLICIES or (
+        requested is not None and requested not in CACHE_POLICIES
+    ):
+        raise ValueError("Unknown placement or cache policy")
+    resolved = requested or (
+        "never" if policy == "R0" else "phase" if policy == "M3" else "guidance"
+    )
+    if policy == "R0" and resolved != "never":
+        raise ValueError("R0 retains original residency and allocator behavior")
+    return resolved
+
+
+def should_empty_cache(cache: str, event: str, offloaded: bool = False) -> bool:
+    """Flush after conditioning, and optionally after guidance module offload.
+
+    Phase mode flushes once after CLIP leaves the GPU, before the first denoiser
+    call. Never mode disables all adapter-added flushing. Upstream is unchanged.
+    """
+    if cache not in CACHE_POLICIES or event not in {"conditioning", "guidance"}:
+        raise ValueError("Unknown cache policy or event")
+    if event == "conditioning":
+        return cache != "never"
+    return cache == "guidance" and offloaded
+
+
 def policy_modules(policy: str, active: bool) -> tuple[str, ...]:
     """Choose a fixed placement; M3 is M1 without per-guidance cache flushing."""
     if policy not in POLICIES:

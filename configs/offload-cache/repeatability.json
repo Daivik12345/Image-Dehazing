@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "variants": [
+    {
+      "id": "M0-guidance",
+      "policy": "M0",
+      "cache_policy": "guidance"
+    }
+  ],
+  "reference_variant": "M0-guidance",
+  "scene_ids": [
+    "nh-haze-08",
+    "nh-haze-13"
+  ],
+  "seeds": [
+    42
+  ],
+  "repeats": 3,
+  "modes": [
+    "accsamp"
+  ],
+  "timeout_seconds": 480,
+  "max_jobs": 6,
+  "split": "development",
+  "execution": "cold",
+  "order_seed": 42,
+  "profile": false,
+  "lpips": false
+}
