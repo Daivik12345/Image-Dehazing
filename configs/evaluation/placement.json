@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "policies": [
+    "M0",
+    "M2-U",
+    "M2-C",
+    "M2-R",
+    "M3"
+  ],
+  "seeds": [
+    42
+  ],
+  "repeats": 3,
+  "modes": [
+    "accsamp"
+  ],
+  "timeout_seconds": 480,
+  "max_jobs": 30,
+  "split": "development",
+  "execution": "cold",
+  "scene_ids": [
+    "nh-haze-08",
+    "nh-haze-13"
+  ],
+  "order_seed": 42,
+  "profile": false,
+  "lpips": false
+}

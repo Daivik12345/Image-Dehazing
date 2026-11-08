@@ -260,3 +260,7 @@ proof of unchanged full-model numerical output. Larger inputs remain untested.
 The roundtrip reserved peak is close to the device capacity; do not assume spare
 capacity for larger inputs or preview decodes. No model training or parameter-count
 reduction was performed.
+
+## Separate paired-evaluation notebook
+
+Use [btp-eval-optimised](../notebooks/btp-eval-optimised.ipynb) and [its walkthrough](EVALUATION.md) for fixed NH-HAZE pairs, quality/runtime comparisons and placement experiments. It has its own source dataset; do not replace the dataset attached to baseline+.

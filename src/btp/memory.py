@@ -1,8 +1,23 @@
 """Reduce inference GPU residency without changing pretrained tensor precision."""
 
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Any
+
+POLICIES = ("R0", "M0", "M1", "M2-U", "M2-C", "M2-R", "M3")
+
+
+def policy_modules(policy: str, active: bool) -> tuple[str, ...]:
+    """Choose a fixed placement; M3 is M1 without per-guidance cache flushing."""
+    if policy not in POLICIES:
+        raise ValueError(f"Unknown memory policy: {policy}")
+    if policy in {"R0", "M2-R"} or (policy != "M0" and not active):
+        return ()
+    if policy == "M2-U":
+        return ("unet",)
+    if policy == "M2-C":
+        return ("controlnet",)
+    return ("unet", "controlnet")
 
 
 def prepare_low_memory(model: Any) -> None:
@@ -17,15 +32,27 @@ def prepare_low_memory(model: Any) -> None:
 
 
 @contextmanager
-def offload_denoisers(model: Any) -> Iterator[None]:
+def offload_denoisers(
+    model: Any,
+    modules: tuple[str, ...] = ("unet", "controlnet"),
+    observe: Any = None,
+    phase: Any = None,
+) -> Iterator[None]:
     """Free denoiser GPU residency during VAE guidance, restoring on failure."""
     moved = []
     try:
-        for module in (model.unet, model.controlnet):
+        for name in modules:
+            module = getattr(model, name)
             device = next(module.parameters()).device
-            moved.append((module, device))
-            module.to("cpu")
+            moved.append((name, module, device))
+            with phase("offload_" + name) if phase else nullcontext():
+                module.to("cpu")
+            if observe is not None:
+                observe(name, module, "to_cpu")
         yield
     finally:
-        for module, device in reversed(moved):
-            module.to(device)
+        for name, module, device in reversed(moved):
+            with phase("restore_" + name) if phase else nullcontext():
+                module.to(device)
+            if observe is not None:
+                observe(name, module, "to_gpu")

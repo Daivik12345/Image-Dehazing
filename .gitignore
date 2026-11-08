@@ -16,3 +16,6 @@ data/*
 outputs/*
 checkpoints/*
 artifacts/*.zip
+
+# Generated evaluation bundles
+artifacts/*.bundle

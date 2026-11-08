@@ -8,6 +8,7 @@ import random
 import runpy
 import shutil
 import sys
+from contextlib import ExitStack, nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,6 +16,7 @@ from PIL import Image
 
 from btp.config import ROOT, UPSTREAM
 from btp.experiment import revision, write_json
+from btp.memory import POLICIES, policy_modules
 
 SCRIPTS = {
     "hazegen": ("inference_stage1.py", "stage1.yaml", "stage1.pt"),
@@ -52,6 +54,8 @@ def run_reference(
     dataset_version: str,
     preview_every: int = 10,
     low_memory: bool = False,
+    memory_policy: str | None = None,
+    profile: bool = False,
 ) -> None:
     """Run one CUDA reference image, preserving upstream resize, padding and sampler.
 
@@ -62,6 +66,12 @@ def run_reference(
     """
     if mode not in SCRIPTS or not 0 <= seed < 2**32 or preview_every < 0:
         raise ValueError("Invalid mode, seed, or preview interval")
+    policy = memory_policy or ("M0" if low_memory else "R0")
+    if policy not in POLICIES or (profile and memory_policy is None):
+        raise ValueError(
+            "Invalid policy, or profiling without explicit evaluation policy"
+        )
+    low_memory = policy != "R0"
     if output.exists():
         raise FileExistsError(f"Choose a new output directory: {output}")
     image, weights, output = image.resolve(), weights.resolve(), output.resolve()
@@ -111,8 +121,10 @@ def run_reference(
         "steps": 50,
         "precision": "float32",
         "low_memory": low_memory,
+        "memory_policy": policy,
+        "profiled": profile,
         "memory_strategy": (
-            "frozen weights; CLIP CPU after conditioning; denoisers CPU during guidance"
+            f"frozen weights; CLIP CPU after conditioning; placement policy {policy}"
             if low_memory
             else "original model residency"
         ),
@@ -131,7 +143,16 @@ def run_reference(
         "numpy": np.__version__,
         "gpu": torch.cuda.get_device_name(0),
         "checkpoint_sha256": {p.name: sha256_file(p) for p in needed},
-        "evaluation": "Single-image inference; no paper benchmark metrics computed",
+        "evaluation": "Single-image inference; metrics scored separately after inference",
+        "cuda": torch.version.cuda,
+        "cudnn": torch.backends.cudnn.version(),
+        "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
+        "cudnn_benchmark": torch.backends.cudnn.benchmark,
+        "tf32_matmul": torch.backends.cuda.matmul.allow_tf32,
+        "tf32_cudnn": torch.backends.cudnn.allow_tf32,
+        "padded_size": [
+            ((v + 63) // 64) * 64 for v in reference_dimensions(width, height)
+        ],
         "compatibility": "Torch 2.6 restricted legacy-metadata loader; native SDPA",
         "previews": "Diagnostic decodes of noisy sampler states, not final predictions",
     }
@@ -142,19 +163,48 @@ def run_reference(
     )
     from diffbir.sampler import SpacedSampler
 
+    from btp.telemetry import Telemetry
+
+    monitor = Telemetry(torch, output, profile) if memory_policy is not None else None
+
     original_step = SpacedSampler.p_sample
     original_guidance = SpacedSampler.apply_cond_fn
     original_load = torch.load
     calls = 0
 
     def guidance(sampler, model, *args, **kwargs):
-        if not low_memory:
+        if not low_memory and monitor is None:
             return original_guidance(sampler, model, *args, **kwargs)
         from btp.memory import offload_denoisers
 
-        with offload_denoisers(model):
-            torch.cuda.empty_cache()
-            return original_guidance(sampler, model, *args, **kwargs)
+        # Original signature: model, pred_x0, t, index, cond_fn.
+        t = args[1] if len(args) > 1 else kwargs["t"]
+        cond_fn = args[3] if len(args) > 3 else kwargs["cond_fn"]
+        active = (
+            cond_fn.t_stop < int(t[0].item()) + 1 < cond_fn.t_start
+            and cond_fn.repeat > 0
+        )
+        modules = policy_modules(policy, active)
+        if monitor:
+            monitor.counts["guidance_active" if active else "guidance_inactive"] += 1
+            monitor.in_guidance = True
+        try:
+            with (
+                monitor.phase("guidance_with_transfers") if monitor else nullcontext(),
+                offload_denoisers(
+                    model,
+                    modules=modules,
+                    observe=monitor.transfer if monitor else None,
+                    phase=monitor.phase if monitor else None,
+                ),
+            ):
+                if modules and policy != "M3":
+                    with monitor.phase("empty_cache") if monitor else nullcontext():
+                        torch.cuda.empty_cache()
+                return original_guidance(sampler, model, *args, **kwargs)
+        finally:
+            if monitor:
+                monitor.in_guidance = False
 
     def step(sampler, model, *args, **kwargs):
         nonlocal calls
@@ -165,6 +215,8 @@ def run_reference(
             torch.cuda.empty_cache()
         result = original_step(sampler, model, *args, **kwargs)
         calls += 1
+        if monitor:
+            monitor.counts["sampler_calls"] = calls
         state = {"state": "running", "mode": mode, "sampler_calls": calls}
         if preview_every and calls % preview_every == 0:
             devices = [result.device.index or 0] if result.device.type == "cuda" else []
@@ -194,14 +246,81 @@ def run_reference(
 
     try:
         with (
+            ExitStack() as instrumentation,
             patch.object(torch, "load", checkpoint_load),
             patch.object(SpacedSampler, "p_sample", step),
             patch.object(SpacedSampler, "apply_cond_fn", guidance),
         ):
+            if monitor:
+                from diffbir.model import ControlLDM
+
+                def phase_wrapper(original, label):
+                    def wrapped(*args, **kwargs):
+                        with monitor.phase(label):
+                            result = original(*args, **kwargs)
+                        if label == "vae_decode" and not monitor.in_sampling:
+                            if not torch.isfinite(result).all():
+                                raise RuntimeError("Non-finite final VAE decode")
+                        return result
+
+                    return wrapped
+
+                for method, label in [
+                    ("prepare_condition", "conditioning"),
+                    ("prepare_text_condition", "text_conditioning"),
+                    ("forward", "denoiser_forward"),
+                    ("vae_decode", "vae_decode"),
+                    ("vae_encode", "vae_encode"),
+                    ("load_pretrained_sd", "load_sd_state"),
+                    ("load_controlnet_from_ckpt", "load_control_state"),
+                ]:
+                    instrumentation.enter_context(
+                        patch.object(
+                            ControlLDM,
+                            method,
+                            phase_wrapper(getattr(ControlLDM, method), label),
+                        )
+                    )
+
+                def sample_wrapper(original):
+                    def wrapped(*args, **kwargs):
+                        with monitor.sample():
+                            return original(*args, **kwargs)
+
+                    return wrapped
+
+                for method in ("sample", "accsamp"):
+                    instrumentation.enter_context(
+                        patch.object(
+                            SpacedSampler,
+                            method,
+                            sample_wrapper(getattr(SpacedSampler, method)),
+                        )
+                    )
+                instrumentation.enter_context(
+                    patch.object(
+                        torch.autograd,
+                        "backward",
+                        phase_wrapper(torch.autograd.backward, "backward"),
+                    )
+                )
+                if profile:
+                    profiler = instrumentation.enter_context(
+                        torch.profiler.profile(
+                            activities=[
+                                torch.profiler.ProfilerActivity.CPU,
+                                torch.profiler.ProfilerActivity.CUDA,
+                            ],
+                            profile_memory=True,
+                            record_shapes=False,
+                        )
+                    )
             with patch.object(
                 sys, "argv", [script, "--config", str(output / "config.yaml")]
             ):
                 runpy.run_path(str(UPSTREAM / script), run_name="__main__")
+        if monitor and profile:
+            profiler.export_chrome_trace(str(output / "profile.json"))
         result = output / "final/input.png"
         if not result.is_file():
             raise RuntimeError("Upstream did not save its final output")
@@ -213,11 +332,19 @@ def run_reference(
         write_json(
             output / "status.json", {"state": "completed", "sampler_calls": calls}
         )
-        manifest["peak_gpu_allocated_bytes"] = torch.cuda.max_memory_allocated()
-        manifest["peak_gpu_reserved_bytes"] = torch.cuda.max_memory_reserved()
+        manifest["peak_gpu_allocated_bytes"] = max(
+            monitor.before_peak[0] if monitor else 0, torch.cuda.max_memory_allocated()
+        )
+        manifest["peak_gpu_reserved_bytes"] = max(
+            monitor.before_peak[1] if monitor else 0, torch.cuda.max_memory_reserved()
+        )
         write_json(output / "manifest.json", manifest)
+        if monitor:
+            monitor.save("completed")
     except BaseException as error:
         write_json(output / "status.json", {"state": "failed", "error": str(error)})
+        if monitor:
+            monitor.save("failed", str(error))
         raise
 
 
@@ -232,6 +359,8 @@ def main() -> None:
     parser.add_argument("--dataset-version", required=True)
     parser.add_argument("--preview-every", type=int, default=10)
     parser.add_argument("--low-memory", action="store_true")
+    parser.add_argument("--memory-policy", choices=POLICIES)
+    parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     run_reference(
         args.input,
@@ -242,6 +371,8 @@ def main() -> None:
         args.dataset_version,
         args.preview_every,
         args.low_memory,
+        args.memory_policy,
+        args.profile,
     )
 
 

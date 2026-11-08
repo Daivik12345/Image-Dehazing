@@ -48,3 +48,18 @@ def test_prepare_freezes_weights_and_only_offloads_text_encoder():
     assert all(
         getattr(net, name).frozen for name in ("unet", "controlnet", "clip", "vae")
     )
+
+
+def test_selective_policy_moves_only_requested_modules():
+    from btp.memory import policy_modules
+
+    net = model()
+    assert policy_modules("M2-U", True) == ("unet",)
+    assert policy_modules("M1", False) == ()
+    assert policy_modules("M0", False) == ("unet", "controlnet")
+    with offload_denoisers(net, modules=("unet",)):
+        assert net.unet.device == "cpu"
+        assert net.controlnet.device == "cuda:0"
+    assert net.unet.device == "cuda:0"
+    with pytest.raises(ValueError):
+        policy_modules("invalid", True)

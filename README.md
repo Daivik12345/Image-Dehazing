@@ -38,6 +38,12 @@ These changes reduce GPU residency without reducing parameter count. They add CP
 
 [Open the live btp-baseline+ notebook](https://www.kaggle.com/code/cubingultimate/btp-baseline) or read the [Kaggle guide](docs/KAGGLE.md) for setup and limitations.
 
+## Evaluation and offloading experiments
+
+The separate [btp-eval-optimised notebook](notebooks/btp-eval-optimised.ipynb) adds a paired NH-HAZE evaluation harness, fixed development/held-out crops, PSNR/SSIM scoring, structured failures, synchronized sampling timing, memory/transfer counters and a separate profiler run. Baseline+ remains unchanged.
+
+Start with the four-job M0/M1 pilot and read [the evaluation walkthrough](docs/EVALUATION.md). Repeatability and selective-placement configurations are included for later controlled experiments. The first panel uses 512×512 internal diagnostic crops; it is not the official paper benchmark. Resident model reuse and asynchronous transfers remain staged follow-ups.
+
 ## Start on Kaggle
 
 1. Read the [step-by-step Kaggle guide](docs/KAGGLE.md).
@@ -58,7 +64,7 @@ HazeGen, spaced DiffDehaze, AccSamp, and the complete roundtrip.
 ```text
 app.py                 Local Streamlit viewer
 src/btp/               Importable pipeline, reference runner and packaging code
-notebooks/             Previous reference baseline and low-memory baseline+
+notebooks/             Preserved baselines and separate evaluation notebook
 configs/               Runtime dependencies, presets and checkpoint hashes
 docs/                  Kaggle walkthrough and local experiment notes
 scripts/               Download, verification and smoke-check utilities

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "policies": [
+    "M0"
+  ],
+  "seeds": [
+    42
+  ],
+  "repeats": 1,
+  "modes": [
+    "accsamp"
+  ],
+  "timeout_seconds": 480,
+  "max_jobs": 1,
+  "split": "development",
+  "execution": "cold",
+  "scene_ids": [
+    "nh-haze-08"
+  ],
+  "order_seed": 42,
+  "profile": true,
+  "lpips": false
+}
