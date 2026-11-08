@@ -36,7 +36,7 @@ def test_notebook_cells_are_unexecuted_and_parse():
 
 
 def test_notebook_reruns_preserve_existing_images_and_logs(tmp_path):
-    notebook = json.loads((ROOT / "notebooks/kaggle_reference.ipynb").read_text())
+    notebook = json.loads((ROOT / "notebooks/btp-baseline-plus.ipynb").read_text())
     functions = [
         node
         for cell in notebook["cells"]
