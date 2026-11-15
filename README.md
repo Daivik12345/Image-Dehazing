@@ -3,6 +3,12 @@
 A workspace for experimenting with **Learning Hazing to Dehazing** (CVPR 2025),
 with HazeGen, DiffDehaze, a live local viewer, and a Kaggle CUDA reference notebook.
 
+## Validation continuation: November 15, 2026
+
+Added a separate `btp-validation` notebook and explicit evidence selection (`btp.workflow`). It recomputes eligibility from saved records, persists stage paths and records decision hashes. This addresses lost kernel variables and makes rejected selections explain their reasons without weakening the criteria. Existing notebooks are unchanged.
+
+The earlier user-supplied two-scene placement table showed M2-R sampling averaging 57.92 s versus 146.07 s for M0 (about 60% lower), but the original archive was not saved and a later selection failed. Treat this as preliminary screening, not a confirmed optimization. Fresh validation and subsequent model-reuse/compression research remain pending. See [continuation instructions](docs/VALIDATION.md).
+
 ## Development update: November 8, 2026
 
 Added the separate [btp-offload-cache workflow](notebooks/btp-offload-cache.ipynb) for **selective UNet/ControlNet offloading** and **independent cache-flushing experiments**. It measures M0 repeatability, screens placements, then supports opt-in cache comparison and repeated confirmation. Variant-specific results prevent different placements/cache policies from being mixed. Failed or numerically drifting candidates cannot pass screening eligibility.
