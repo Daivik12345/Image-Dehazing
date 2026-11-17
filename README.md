@@ -5,7 +5,7 @@ with HazeGen, DiffDehaze, a live local viewer, and a Kaggle CUDA reference noteb
 
 ## Validation continuation: November 15, 2026
 
-Added a separate `btp-validation` notebook and explicit evidence selection (`btp.workflow`). It recomputes eligibility from saved records, persists stage paths and records decision hashes. This addresses lost kernel variables and makes rejected selections explain their reasons without weakening the criteria. Existing notebooks are unchanged.
+Added a separate [btp-validation notebook](https://www.kaggle.com/code/cubingultimate/btp-validation), its [private source dataset](https://www.kaggle.com/datasets/cubingultimate/btp-validation-source), and explicit evidence selection (`btp.workflow`). It recomputes eligibility from saved records, persists stage paths and records decision hashes. This addresses lost kernel variables and makes rejected selections explain their reasons without weakening the criteria. Existing notebooks are unchanged.
 
 The earlier user-supplied two-scene placement table showed M2-R sampling averaging 57.92 s versus 146.07 s for M0 (about 60% lower), but the original archive was not saved and a later selection failed. Treat this as preliminary screening, not a confirmed optimization. Fresh validation and subsequent model-reuse/compression research remain pending. See [continuation instructions](docs/VALIDATION.md).
 
