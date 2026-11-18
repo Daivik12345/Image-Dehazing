@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "status": "Planning caps only; GPU/training budgets require explicit approval",
+  "paid_compute_authorized": false,
+  "large_downloads_authorized": false,
+  "stages": {
+    "cpu_smoke": {
+      "max_images": 2,
+      "max_optimizer_updates": 2,
+      "device": "cpu"
+    },
+    "teacher_smoke": {
+      "max_images": 8,
+      "approval_required": true
+    },
+    "teacher_targets": {
+      "max_images": 100,
+      "max_t4_seconds": 7200,
+      "stop_rule": "whichever cap reached first",
+      "approval_required": true
+    },
+    "student_pilot": {
+      "profiling_updates": 100,
+      "max_optimizer_updates": 2000,
+      "max_t4_seconds": 7200,
+      "profiling_included_in_cap": true,
+      "approval_required": true
+    },
+    "student_ablations": {
+      "requires": "Separately approved jobs with equal total updates and exact data/config hashes",
+      "approval_required": true
+    },
+    "guidance_smoke": {
+      "max_scenes": 1,
+      "approval_required": true
+    },
+    "tiling_smoke": {
+      "max_scenes": 1,
+      "variants": [
+        "C1",
+        "C2"
+      ],
+      "include_global_pass_cost": true,
+      "approval_required": true
+    },
+    "development_confirmation": {
+      "max_unique_scenes": 10,
+      "requires": "Enumerated job matrix and budget based on measured median time",
+      "approval_required": true
+    },
+    "heldout": {
+      "max_unique_scenes": 45,
+      "requires": "Frozen finalist hashes and approved total job/time budget",
+      "approval_required": true
+    }
+  },
+  "expansion_rule": "A bounded pilot does not authorize additional seeds, ablations or full training; profile before estimating total campaign cost",
+  "failure_rule": "No automatic retry with changed batch, resolution, precision or model policy"
+}

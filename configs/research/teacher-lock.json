@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "status": "conservative-reference-not-compression",
+  "model": "upstream DiffDehaze",
+  "mode": "accsamp",
+  "memory_policy": "M0",
+  "cache_policy": "guidance",
+  "precision": "float32",
+  "seed": 42,
+  "steps": 50,
+  "checkpoint_sha256": {
+    "v2-1_512-ema-pruned.ckpt": "88ecb782561455673c4b78d05093494b9c539fc6bfc08f3a9a4a0dd7b0b10f36",
+    "stage2.pt": "d7dada8b659c1554b58b0f6f1353e9bac80849191094307f45de0303ebe962da"
+  },
+  "runtime": {
+    "checkpoint_sha256": {
+      "v2-1_512-ema-pruned.ckpt": "88ecb782561455673c4b78d05093494b9c539fc6bfc08f3a9a4a0dd7b0b10f36",
+      "stage2.pt": "d7dada8b659c1554b58b0f6f1353e9bac80849191094307f45de0303ebe962da"
+    },
+    "gpu": "Tesla T4",
+    "torch": "2.6.0+cu118",
+    "cuda": "11.8",
+    "cudnn": 90100,
+    "tf32_matmul": false,
+    "tf32_cudnn": true,
+    "deterministic_algorithms": false,
+    "cudnn_benchmark": false,
+    "precision": "float32",
+    "steps": 50,
+    "input_size": [
+      512,
+      512
+    ]
+  },
+  "evidence_archive_sha256": "fd7219f49fb2f04fa2c4622d6b78de9eba9ff4dd925ce3d04a76202c48ab467c",
+  "protocol": {
+    "metric": "btp-rgb-full-psnr-ssim-gaussian11-population-v1",
+    "manifest_sha256": "bee853fc0b5f8a440214890553bf7e3091607ff05c3b8d418261b54bd65f4b27",
+    "dataset": "NH-HAZE",
+    "release": "NTIRE2020-55-pairs",
+    "source_commit": null,
+    "source_manifest_sha256": "e58b8eb144d88fa3b564b16d149ef33e9233480ff34345be9ade19a88fc60d79",
+    "geometry_tiers": [
+      "center-512"
+    ],
+    "preview_every": 0,
+    "execution": "cold",
+    "order_seed": 42
+  },
+  "rationale": "M0 reference retained. Cache phase slower; never fails strict output gate. Faster placements remain unconfirmed.",
+  "parameter_count": null,
+  "parameter_count_status": "Pending actual model construction audit",
+  "scope": "Validated two-scene reference execution, not full held-out validation"
+}

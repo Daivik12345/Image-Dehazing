@@ -1,0 +1,26 @@
+{
+  "archive_sha256": "fd7219f49fb2f04fa2c4622d6b78de9eba9ff4dd925ce3d04a76202c48ab467c",
+  "files": 255,
+  "uncompressed_bytes": 25541385,
+  "stages": {
+    "repeatability-1794894167823233998": {
+      "jobs": 6,
+      "statuses": {
+        "completed": 6
+      }
+    },
+    "placement-1794895324439495525": {
+      "jobs": 8,
+      "statuses": {
+        "completed": 8
+      }
+    },
+    "cache-1794898812817591356": {
+      "jobs": 6,
+      "statuses": {
+        "completed": 6
+      }
+    }
+  },
+  "scope": "Inventory and CRC validation only; not scientific acceptance"
+}

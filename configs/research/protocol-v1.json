@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "protocol_id": "btp-research-v1",
+  "registered_date": "2026-11-17",
+  "status": "pre-registered research targets; not experimental results or compute authorization",
+  "evaluation": {
+    "dataset": "NH-HAZE",
+    "release": "NTIRE2020-55-pairs",
+    "frozen_manifest_sha256": "bee853fc0b5f8a440214890553bf7e3091607ff05c3b8d418261b54bd65f4b27",
+    "archive_sha256": "b0e4b478ea21d1f49e060deb4a84fdff97b83e0647b38d5bdea05e48ef7ba79e",
+    "development_scene_ids": [
+      "nh-haze-08",
+      "nh-haze-13",
+      "nh-haze-20",
+      "nh-haze-21",
+      "nh-haze-29",
+      "nh-haze-39",
+      "nh-haze-41",
+      "nh-haze-45",
+      "nh-haze-53",
+      "nh-haze-54"
+    ],
+    "heldout_scene_ids": [
+      "nh-haze-01",
+      "nh-haze-02",
+      "nh-haze-03",
+      "nh-haze-04",
+      "nh-haze-05",
+      "nh-haze-06",
+      "nh-haze-07",
+      "nh-haze-09",
+      "nh-haze-10",
+      "nh-haze-11",
+      "nh-haze-12",
+      "nh-haze-14",
+      "nh-haze-15",
+      "nh-haze-16",
+      "nh-haze-17",
+      "nh-haze-18",
+      "nh-haze-19",
+      "nh-haze-22",
+      "nh-haze-23",
+      "nh-haze-24",
+      "nh-haze-25",
+      "nh-haze-26",
+      "nh-haze-27",
+      "nh-haze-28",
+      "nh-haze-30",
+      "nh-haze-31",
+      "nh-haze-32",
+      "nh-haze-33",
+      "nh-haze-34",
+      "nh-haze-35",
+      "nh-haze-36",
+      "nh-haze-37",
+      "nh-haze-38",
+      "nh-haze-40",
+      "nh-haze-42",
+      "nh-haze-43",
+      "nh-haze-44",
+      "nh-haze-46",
+      "nh-haze-47",
+      "nh-haze-48",
+      "nh-haze-49",
+      "nh-haze-50",
+      "nh-haze-51",
+      "nh-haze-52",
+      "nh-haze-55"
+    ],
+    "seed": 42,
+    "split_unit": "original source scene; all crops, aliases and generated variants inherit split",
+    "teacher_exposure": "Unknown; project-held-out is not proof of globally unseen data"
+  },
+  "metrics": {
+    "psnr_ssim_protocol": "btp-rgb-full-psnr-ssim-gaussian11-population-v1",
+    "decode": "RGB",
+    "range": [
+      0,
+      1
+    ],
+    "border_crop": 0,
+    "geometry": "No resizing or upsampling; exact paired dimensions; native or eligible center-512/768/1024",
+    "lpips_status": "Unavailable until network, weights hash, input normalization and spatial reduction are pinned; missing values remain null",
+    "aggregation": "Equal weight per original scene; seeds/repeats nested within scenes",
+    "bootstrap": {
+      "unit": "scene",
+      "paired": true,
+      "seed": 42,
+      "resamples": 10000,
+      "interpretation": "descriptive uncertainty; not independent tiles or timed repeats"
+    }
+  },
+  "systems_gate": {
+    "implementation": "btp.optimization.screen_report",
+    "rule": "Both saved RGB PNG MAE and max absolute error must be <= observed matched M0 repeat variation + 1e-12; source/data/runtime must match",
+    "numeric_slack": 1e-12,
+    "baseline_limits": "Measured from same-protocol M0 repeats; never widened after candidate results",
+    "scope": "Numerical systems changes only; eligibility is not final acceptance"
+  },
+  "quality_gates": {
+    "A": {
+      "primary_metric": "clean-target mean PSNR",
+      "minimum_parameter_reduction_factor": 10,
+      "minimum_warm_latency_reduction_factor": 5,
+      "minimum_psnr_delta_db": -0.5,
+      "minimum_ssim_delta": -0.01,
+      "maximum_relative_lpips_increase": 0.05,
+      "lpips_near_zero_rule": "Inconclusive until an absolute ceiling is registered before results",
+      "additional_requirements": [
+        "same hardware, geometry and batch size",
+        "per-scene losses and artifact review",
+        "measure deployment parameters and checkpoint bytes separately"
+      ]
+    },
+    "B": {
+      "primary_metric": "clean-target mean PSNR",
+      "minimum_psnr_delta_db": 0.3,
+      "minimum_ssim_delta": -0.005,
+      "maximum_lpips_delta": 0,
+      "maximum_severe_hallucination_count_delta": 0,
+      "alternate_lpips_primary": "Requires a new pre-run configuration: >=5% relative LPIPS reduction and PSNR delta >= -0.2 dB; no retrospective choice"
+    },
+    "C": {
+      "success_paths": [
+        "full native output coverage on at least one larger tier that full-frame reference cannot process within the same GPU budget",
+        "at least 20% boundary-band error reduction versus plain tiling while preserving quality/detail"
+      ],
+      "minimum_boundary_error_reduction_fraction": 0.2,
+      "minimum_psnr_delta_db": -0.2,
+      "minimum_ssim_delta": 0,
+      "maximum_lpips_delta": 0,
+      "seam_half_width_pixels": 8,
+      "detail_rule": "No observed fine-detail collapse; report boundary gradient error and fixed visual crops",
+      "coverage_rule": "Keep reference OOM/timeouts in denominator; pair comparisons on explicit intersection, candidate absolute quality on declared full coverage",
+      "global_pass_cost": "Include in warm end-to-end timing"
+    },
+    "all": {
+      "missing_required_measurement": "inconclusive; never substitute zero",
+      "failed_scene": "retain failure and planned denominator",
+      "no_posthoc_threshold_relaxation": true,
+      "systems_gate_applies": false
+    }
+  },
+  "heldout_policy": {
+    "allow_tuning": false,
+    "requires": "Frozen finalist checkpoint/config hashes, geometry, metrics, rejection criteria and approved budget before test execution",
+    "checkpoint_selection": "Separate corpus-validation PSNR, then SSIM, then earlier update",
+    "development_use": "Every cross-domain decision recorded; development is not training data"
+  },
+  "deployment_timing": {
+    "batch_size": 1,
+    "excluded_warmups": 1,
+    "timed_repetitions": 5,
+    "report": [
+      "median",
+      "range",
+      "cold startup separately"
+    ],
+    "cuda_sync": true,
+    "preview_every": 0
+  },
+  "failure_policy": {
+    "oom": "Record failure; no silent geometry, precision, batch or policy fallback",
+    "candidate_statuses": [
+      "proposed",
+      "implemented",
+      "CPU-validated",
+      "GPU-smoke",
+      "screened",
+      "confirmed",
+      "rejected",
+      "inconclusive"
+    ]
+  }
+}

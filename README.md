@@ -3,11 +3,48 @@
 A workspace for experimenting with **Learning Hazing to Dehazing** (CVPR 2025),
 with HazeGen, DiffDehaze, a live local viewer, and a Kaggle CUDA reference notebook.
 
+## Multi-axis development: November 17, 2026
+
+Implemented the first research foundation for a compact deployment model, native-size inference, and guidance-quality experiments. **These are implemented and CPU-tested capabilities, not demonstrated restoration gains or a trained student release.**
+
+| Track | New implementation | Current evidence / next gate |
+|---|---|---|
+| Compact student | NAFNet-style width-16 network: **1,724,275 parameters**; reconstruction/SSIM and optional teacher supervision; seeded, bounded A0/A1 pilot CLI; hash-checked export/inference | Tiny synthetic CPU training/resume tests pass. Separate training corpus and approved GPU pilot still required |
+| Native resolution | Complete overlapping tile coverage, positive blending weights, streaming CPU fusion, explicit workspace budget, optional bounded global appearance correction | Identity/odd-size/boundary tests pass. Trained-checkpoint native GPU quality/seam/memory evaluation pending |
+| Guidance quality | Detached confidence weighting, matched-mean uniform control, optional norm cap, opt-in resident integration | CPU gradient/control tests pass. Calibration and CUDA quality experiments pending |
+| Reusable teacher | Persistent M0 model load, fresh per-image sampler/conditioning/guidance, runtime/source identity, bounded target shards with provenance checks | CPU lifecycle and upstream-gradient checks pass. Cold/resident and A-B-A CUDA equivalence pending |
+| Reproducibility | Frozen protocols, data leakage checks, native/larger NH-HAZE manifests, evidence auditing and paired scene bootstrap | Original **10 development / 45 test** split preserved; no held-out tuning or new held-out result |
+
+The student targets deployment-time **DiffDehaze**; it does not compress HazeGen. Its float32 parameters occupy 6,897,100 bytes, excluding buffers/serialization. No compression ratio is claimed until the required teacher deployment modules are counted and quality is measured.
+
+### What the latest completed validation actually found
+
+The supplied session archive contains **20 completed inference jobs**: six repeatability, eight placement, and six cache jobs. Raw evidence retains **M0 + guidance flushing** as the conservative reference. M2-R failed the unchanged observed-variation gate on one scene. Its tiny pixel differences do not establish visibly worse restoration, but cannot be silently accepted under a different threshold.
+
+At M0 placement, the two-scene cache screen measured median sampling times of **139.44 s (guidance), 144.49 s (phase), and 146.22 s (never)**. Phase passed consistency but was slower; never failed consistency. There is no confirmed cache speedup, repeated-finalist result or new paper-level score. [Teacher lock](configs/research/teacher-lock.json) and [archive inventory](docs/research/evidence/validation-session-inventory.json) retain provenance.
+
+### New workflows and instructions
+
+- [Data audit notebook](notebooks/btp-data-audit.ipynb): independent training corpus audit.
+- [Teacher targets notebook](notebooks/btp-teacher-targets.ipynb): bounded training-only target generation, disabled until teacher validation and budget approval.
+- [Student pilot notebook](notebooks/btp-student-pilot.ipynb): CPU smoke, real-data dry audit, explicit opt-in profiling/training.
+- [Guidance quality notebook](notebooks/btp-guidance-quality.ipynb): separate B0/confidence/uniform experiments after calibration.
+- [Global tiles notebook](notebooks/btp-global-tiles.ipynb): native student inference with a supplied hash-verified checkpoint.
+- [Execution guide](docs/RESEARCH_WORKFLOWS.md), [training dataset choices and next steps](docs/research/TRAINING_DATA_NEXT_STEPS.md), [detailed plan](docs/superpowers/plans/2026-11-16-multi-axis-btp-development.md), and [implementation ledger](docs/research/EXECUTION_PROGRESS.md).
+
+These notebook links are repository files; they are not claims of completed Kaggle runs. Previous notebooks remain unchanged. Subsequent A2/generated-data ablations, full confirmation/release notebooks, UI integration and a trained model card depend on validated artifacts and remain pending.
+
+### Validation and limits
+
+The base test suite passed **167 tests**, with **20 optional Torch checks skipped** in the base environment. The existing isolated Torch runtime passed **11 student/CLI tests, 7 guidance tests and 3 resident-gradient tests**. Ruff lint and formatting checks pass. No new GPU jobs, large dataset downloads, paid compute or long training were launched.
+
+Next: acquire an appropriate paired training release, audit source-scene splits, approve the first 100-update profile within the fixed pilot budget, and validate resident equivalence before generating teacher targets. Target improvements across compression and native-resolution capability require independent measured evidence; targets are not results.
+
 ## Validation continuation: November 15, 2026
 
 Added a separate [btp-validation notebook](https://www.kaggle.com/code/cubingultimate/btp-validation), its [private source dataset](https://www.kaggle.com/datasets/cubingultimate/btp-validation-source), and explicit evidence selection (`btp.workflow`). It recomputes eligibility from saved records, persists stage paths and records decision hashes. This addresses lost kernel variables and makes rejected selections explain their reasons without weakening the criteria. Existing notebooks are unchanged.
 
-The earlier user-supplied two-scene placement table showed M2-R sampling averaging 57.92 s versus 146.07 s for M0 (about 60% lower), but the original archive was not saved and a later selection failed. Treat this as preliminary screening, not a confirmed optimization. Fresh validation and subsequent model-reuse/compression research remain pending. See [continuation instructions](docs/VALIDATION.md).
+The earlier user-supplied two-scene placement table showed M2-R sampling averaging 57.92 s versus 146.07 s for M0 (about 60% lower), but the original archive was not saved and a later selection failed. Treat this as preliminary screening, not a confirmed optimization. This historical status is superseded by the November 17 archive review above; model-reuse/compression GPU validation remains pending. See [continuation instructions](docs/VALIDATION.md).
 
 ## Development update: November 8, 2026
 
