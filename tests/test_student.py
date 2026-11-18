@@ -295,6 +295,48 @@ class TrainingBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "budget"):
                 resumed.restore(checkpoint)
 
+    def test_segment_deadline_resumes_without_changing_total_budget(self):
+        from unittest.mock import patch
+
+        from btp.student.trainer import BoundedTrainer
+
+        architecture, config, pairs, provenance = self.fixture()
+        trainer = BoundedTrainer.create(
+            config, pairs, model_config=architecture, provenance=provenance
+        )
+        trainer.elapsed_seconds = 5.0
+        clock = [0.0]
+        original_forward = trainer.model.forward
+
+        def slow_forward(image):
+            result = original_forward(image)
+            clock[0] += 2.0
+            return result
+
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                patch(
+                    "btp.student.trainer.time.monotonic", side_effect=lambda: clock[0]
+                ),
+                patch.object(trainer.model, "forward", side_effect=slow_forward),
+            ):
+                trainer.run(checkpoint_dir=Path(directory), max_segment_seconds=1.0)
+            self.assertEqual(trainer.updates, 0)
+            self.assertEqual(trainer.elapsed_seconds, 7.0)
+            self.assertEqual(trainer.last_segment["elapsed_seconds"], 2.0)
+            self.assertEqual(trainer.last_segment["max_segment_seconds"], 1.0)
+            resumed = BoundedTrainer.create(
+                config, pairs, model_config=architecture, provenance=provenance
+            )
+            resumed.restore(Path(directory) / "last.pt")
+            self.assertEqual(resumed.config, config)
+            resumed.run(max_segment_seconds=30.0)
+            self.assertEqual(resumed.updates, 2)
+            self.assertGreaterEqual(resumed.elapsed_seconds, 7.0)
+        for invalid in (0.0, -1.0, float("nan"), float("inf")):
+            with self.assertRaises(ValueError):
+                trainer.run(max_segment_seconds=invalid)
+
 
 if __name__ == "__main__":
     unittest.main()

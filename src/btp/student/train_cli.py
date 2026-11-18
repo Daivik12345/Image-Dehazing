@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import shutil
+import time
 from pathlib import Path
 from typing import Any
 
@@ -46,12 +47,14 @@ def run_pilot(
     crop_size: int = 256,
     max_host_bytes: int = 512 * 1024**2,
     until_update: int = 100,
+    max_segment_seconds: float = 1200,
     device: str = "cpu",
     resume: Path | None = None,
 ) -> dict[str, Any]:
     """Audit all fixed splits, optionally run a bounded pilot and export evidence.
 
-    Defaults stop at absolute update 100 for profiling, counted within the total
+    Defaults stop at absolute update 100 or 1200 seconds this segment for profiling,
+    counted within the total
     2000-update/7200-second cap. Continuation requires an explicit larger
     until_update and the prior last.pt plus its budget sidecar. Fixed seeded
     crops, one per pair, have no flips or resampling; this is a pilot policy,
@@ -61,6 +64,8 @@ def run_pilot(
     decode workspace; it excludes model/optimizer/activation/runtime memory.
     No Torch import or model construction occurs in audit-only mode.
     """
+    if not math.isfinite(max_segment_seconds) or max_segment_seconds <= 0:
+        raise ValueError("max_segment_seconds must be finite and positive")
     settings = dict(_DEFAULTS, **(config or {}))
     if set(settings) != set(_DEFAULTS):
         raise ValueError("Unknown training configuration fields")
@@ -144,6 +149,7 @@ def run_pilot(
         config=settings,
         architecture=architecture or {},
         until_update=until_update,
+        max_segment_seconds=max_segment_seconds,
         estimated_corpus_host_bytes=estimated_bytes,
         max_corpus_host_bytes=max_host_bytes,
         memory_scope="corpus tensors/clones and decode workspace; excludes model/runtime",
@@ -175,6 +181,15 @@ def run_pilot(
 
         if device.startswith("cuda") and not torch.cuda.is_available():
             raise RuntimeError("Requested CUDA unavailable; no device fallback")
+        is_cuda = torch.device(device).type == "cuda"
+        record["runtime"] = {
+            "torch": str(torch.__version__),
+            "cuda": torch.version.cuda,
+            "device": str(torch.device(device)),
+            "device_name": torch.cuda.get_device_name(device) if is_cuda else "CPU",
+            "cudnn": torch.backends.cudnn.version() if is_cuda else None,
+        }
+        record.update(allocated_peak_bytes=None, reserved_peak_bytes=None)
         pairs, validation = [], []
         crop_seeds = {}
         for row in rows:
@@ -274,7 +289,25 @@ def run_pilot(
             selection_psnr_policy="mean per-pair PSNR; exact-match MSE floored to float64 tiny only for selection",
         )
         persist()
-        trainer.run(until_update=until_update, checkpoint_dir=output, validate=validate)
+        if is_cuda:
+            torch.cuda.synchronize(device)
+            torch.cuda.reset_peak_memory_stats(device)
+        training_started = time.perf_counter()
+        try:
+            trainer.run(
+                until_update=until_update,
+                max_segment_seconds=max_segment_seconds,
+                checkpoint_dir=output,
+                validate=validate,
+            )
+        finally:
+            if is_cuda:
+                torch.cuda.synchronize(device)
+                record["allocated_peak_bytes"] = torch.cuda.max_memory_allocated(device)
+                record["reserved_peak_bytes"] = torch.cuda.max_memory_reserved(device)
+            record["training_wall_seconds"] = time.perf_counter() - training_started
+            record["segment"] = trainer.last_segment
+            persist()
         record.update(
             updates=trainer.updates,
             elapsed_seconds=trainer.elapsed_seconds,
@@ -317,6 +350,7 @@ def main() -> None:
     parser.add_argument("--crop-size", type=int, default=256)
     parser.add_argument("--max-host-bytes", type=int, default=512 * 1024**2)
     parser.add_argument("--until-update", type=int, default=100)
+    parser.add_argument("--max-segment-seconds", type=float, default=1200)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--run", action="store_true")

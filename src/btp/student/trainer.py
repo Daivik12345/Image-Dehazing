@@ -185,6 +185,7 @@ class BoundedTrainer:
         self.exposures = 0
         self.elapsed_seconds = 0.0
         self.history: list[dict] = []
+        self.last_segment: dict | None = None
         self.best: tuple[float, float, int] | None = None
         random.seed(config.seed)
         torch.manual_seed(config.seed)
@@ -206,6 +207,7 @@ class BoundedTrainer:
         self,
         *,
         until_update: int | None = None,
+        max_segment_seconds: float | None = None,
         checkpoint_dir: Path | None = None,
         validate: Callable[[CompactDehaze], tuple[float, float]] | None = None,
     ) -> None:
@@ -213,8 +215,15 @@ class BoundedTrainer:
 
         A deadline may overrun by one microbatch/validation/save operation. Incomplete
         accumulation is discarded and its sampler position rolled back. Budget time
-        still counts. Validation must use training-corpus validation, never held-out data.
+        still counts. max_segment_seconds caps this invocation without changing the
+        immutable cumulative budget or schedule. last_segment reports the cap and
+        measured duration, including checkpoint serialization. Validation must use
+        training-corpus validation, never held-out data.
         """
+        if max_segment_seconds is not None and (
+            not math.isfinite(max_segment_seconds) or max_segment_seconds <= 0
+        ):
+            raise ValueError("max_segment_seconds must be finite and positive")
         limit = (
             self.config.max_updates
             if until_update is None
@@ -226,10 +235,14 @@ class BoundedTrainer:
             checkpoint_dir.mkdir(parents=True, exist_ok=True)
         started = time.monotonic()
         previous = self.elapsed_seconds
+        start_update = self.updates
 
         def expired() -> bool:
             self.elapsed_seconds = previous + time.monotonic() - started
-            return self.elapsed_seconds >= self.config.max_seconds
+            return self.elapsed_seconds >= self.config.max_seconds or (
+                max_segment_seconds is not None
+                and self.elapsed_seconds - previous >= max_segment_seconds
+            )
 
         self.model.train()
         try:
@@ -297,6 +310,14 @@ class BoundedTrainer:
             expired()
             if checkpoint_dir is not None:
                 self.save(checkpoint_dir / "last.pt")
+            self.last_segment = {
+                "max_segment_seconds": max_segment_seconds,
+                "until_update": limit,
+                "start_update": start_update,
+                "end_update": self.updates,
+                "elapsed_seconds": self.elapsed_seconds - previous,
+                "cumulative_elapsed_seconds": self.elapsed_seconds,
+            }
 
     def save(self, path: Path) -> None:
         """Save resume state plus required .budget.json ledger including save duration.

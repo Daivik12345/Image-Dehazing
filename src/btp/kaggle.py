@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 from btp.config import ROOT, UPSTREAM
+from btp.experiment import revision
 
 
 def build_bundle(output: Path) -> dict:
@@ -43,6 +44,7 @@ def build_bundle(output: Path) -> dict:
     # Upstream tracks Finder metadata; upload services may omit these files.
     files = sorted(path for path in set(selected) if path.name != ".DS_Store")
     snapshot = {
+        "project_commit": revision(ROOT),
         "upstream_commit": commit,
         "files": {
             str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()

@@ -96,3 +96,11 @@ def test_offload_cache_notebook_and_configs_are_isolated():
         json.loads((ROOT / "configs/offload-cache/placement.json").read_text())
     )
     assert {v["policy"] for v in screen["variants"]} == {"M0", "M2-U", "M2-C", "M2-R"}
+
+
+def test_bundle_records_project_commit(tmp_path, monkeypatch):
+    import btp.kaggle as module
+
+    monkeypatch.setattr(module, "revision", lambda root: "a" * 40, raising=False)
+    snapshot = build_bundle(tmp_path / "source.zip")
+    assert snapshot["project_commit"] == "a" * 40

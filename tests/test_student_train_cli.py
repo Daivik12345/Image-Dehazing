@@ -64,11 +64,14 @@ class PilotTests(unittest.TestCase):
             args = self.fixture(Path(directory))
             record = run_pilot(**args)
             self.assertEqual(record["status"], "audit_only")
+            self.assertEqual(record["max_segment_seconds"], 1200)
             self.assertEqual(record["audit"]["counts"], {"train": 1, "validation": 1})
             self.assertFalse((args["output"] / "last.pt").exists())
             args["output"] = Path(directory) / "other"
             for changes in (
                 {"max_host_bytes": 1},
+                {"max_segment_seconds": float("nan")},
+                {"max_segment_seconds": 0},
                 {"config": {"max_updates": 2001}},
                 {"ablation": "A2"},
             ):
@@ -105,6 +108,12 @@ class PilotTests(unittest.TestCase):
                 until_update=1,
             )
             self.assertEqual(record["updates"], 1)
+            self.assertEqual(record["segment"]["max_segment_seconds"], 1200)
+            self.assertGreaterEqual(record["segment"]["elapsed_seconds"], 0)
+            self.assertEqual(record["runtime"]["torch"], str(torch.__version__))
+            self.assertIsNone(record["allocated_peak_bytes"])
+            self.assertIsNone(record["reserved_peak_bytes"])
+            self.assertGreaterEqual(record["training_wall_seconds"], 0)
             self.assertEqual(record["selection"], "corpus_validation_best")
             self.assertTrue((args["output"] / "last.pt.budget.json").exists())
             self.assertTrue((args["output"] / "inference.pt").exists())
@@ -122,8 +131,16 @@ class PilotTests(unittest.TestCase):
                     "checkpoint_interval": 1,
                 },
                 until_update=2,
+                max_segment_seconds=30,
             )
             self.assertEqual(continued["updates"], 2)
+            self.assertEqual(continued["config"], record["config"])
+            self.assertEqual(continued["segment"]["max_segment_seconds"], 30)
+            self.assertGreaterEqual(
+                continued["elapsed_seconds"], record["elapsed_seconds"]
+            )
+            persisted = json.loads((args["output"] / "pilot.json").read_text())
+            self.assertEqual(persisted["segment"], continued["segment"])
             self.assertEqual(
                 continued["initialization_sha256"], record["initialization_sha256"]
             )

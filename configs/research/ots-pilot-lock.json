@@ -1,0 +1,11 @@
+{
+  "dataset": "cubingultimate/btp-student-training-pilot",
+  "version": 1,
+  "bundle_sha256": "a21c367f269353918639706d2a19fef2766e34ccad66a2d71665abfc646376c8",
+  "manifest_sha256": "212ea9635b661ea1abf9a39d9993e2451a6427e68dbcb707b791d049cf792d04",
+  "archive_sha256": "95519a3dc7460c22bf0de503b460ac7a02f6dfcb35ae6790529a71c68ad99003",
+  "train_scenes": 90,
+  "validation_scenes": 10,
+  "seed": 42,
+  "usage": "bounded A0 profile; related-viewpoint review incomplete"
+}

@@ -32,6 +32,9 @@ if not ROOT.exists():
             assert destination.is_relative_to(ROOT), "Unsafe source member"
         archive.extractall(ROOT.parent)
 snapshot = json.loads((ROOT / "source-manifest.json").read_text())
+if len(bundles) == 1:
+    with zipfile.ZipFile(bundles[0]) as archive:
+        assert snapshot == json.loads(archive.read("BTP/source-manifest.json")), "Stale working source: start a fresh session or preserve and move the old BTP directory"
 for name, expected in snapshot["files"].items():
     path = (ROOT / name).resolve()
     assert path.is_relative_to(ROOT) and path.is_file(), name
@@ -142,7 +145,25 @@ print(json.dumps(report, indent=2))
             (
                 "code",
                 """TRAIN_MANIFEST = None
-SOURCE_COMMIT = None  # Exact Image-Dehazing commit used for this source bundle
+pilot_bundles = list(Path("/kaggle/input").rglob("ots-pilot-v1.bundle"))
+if pilot_bundles:
+    assert len(pilot_bundles) == 1, "Attach exactly one pilot dataset version"
+    lock = json.loads((ROOT / "configs/research/ots-pilot-lock.json").read_text())
+    assert hashlib.sha256(pilot_bundles[0].read_bytes()).hexdigest() == lock["bundle_sha256"]
+    data = OUTPUT / "training-data"
+    data.mkdir()
+    with zipfile.ZipFile(pilot_bundles[0]) as archive:
+        for info in archive.infolist():
+            assert (data / info.filename).resolve().is_relative_to(data)
+        archive.extractall(data)
+    TRAIN_MANIFEST = data / "manifest.json"
+    assert hashlib.sha256(TRAIN_MANIFEST.read_bytes()).hexdigest() == lock["manifest_sha256"]
+    (OUTPUT / "dataset-lock.json").write_text(json.dumps(lock, indent=2))
+""",
+            ),
+            (
+                "code",
+                """SOURCE_COMMIT = snapshot.get("project_commit")
 RUN_TRAINING = False
 RESUME_CHECKPOINT = None
 UNTIL_UPDATE = 100  # Absolute endpoint; first profile counts inside total pilot cap
@@ -154,7 +175,8 @@ if TRAIN_MANIFEST is not None:
         "--protocol", str(ROOT / "configs/research/protocol-v1.json"),
         "--architecture", str(ROOT / "configs/research/student/architecture.json"),
         "--source-commit", SOURCE_COMMIT, "--output", str(OUTPUT / "pilot"),
-        "--until-update", str(UNTIL_UPDATE), "--device", "cuda:0"]
+        "--until-update", str(UNTIL_UPDATE), "--max-segment-seconds", "1200",
+        "--max-host-bytes", "1073741824", "--device", "cuda:0"]
     if RUN_TRAINING:
         arguments.append("--run")  # Enable only after explicit budget approval
     if RESUME_CHECKPOINT is not None:

@@ -5,10 +5,11 @@
   "language": "python",
   "kernel_type": "notebook",
   "is_private": true,
-  "enable_gpu": false,
+  "enable_gpu": true,
   "enable_internet": true,
   "dataset_sources": [
-    "cubingultimate/btp-research-source"
+    "cubingultimate/btp-research-source",
+    "cubingultimate/btp-student-training-pilot"
   ],
   "kernel_sources": [],
   "competition_sources": [],
