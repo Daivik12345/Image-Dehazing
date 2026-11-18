@@ -40,3 +40,11 @@ Remaining: source-corpus acquisition/permissions; explicit GPU pilot approval; c
 
 Ruling: use fixed seeded crops for the bounded initial student pilot, documented in CLI records. Cost: this is not the planned full random-augmentation campaign; compare all first ablations under the same crop policy.
 Ruling: preserve save-time accounting with a hash-bound budget sidecar. Cost: resume requires both files; a missing sidecar fails safely rather than resetting the budget. The final tiny sidecar write remains outside measured duration.
+
+## November 18 publication
+
+- GitHub implementation commit: 0b92c91, pushed to main.
+- Private Kaggle btp-research-source reports ready.
+- btp-data-audit, btp-teacher-targets, btp-student-pilot, btp-guidance-quality and btp-global-tiles each saved as version 1 with --no-run.
+- No GPU execution or training; old notebooks untouched. New upload metadata and links recorded in the repository.
+- Downloaded source-only dataset for verification: bundle byte-identical to upload; all 185 embedded file hashes passed.

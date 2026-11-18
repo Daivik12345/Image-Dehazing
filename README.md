@@ -32,7 +32,21 @@ At M0 placement, the two-scene cache screen measured median sampling times of **
 - [Global tiles notebook](notebooks/btp-global-tiles.ipynb): native student inference with a supplied hash-verified checkpoint.
 - [Execution guide](docs/RESEARCH_WORKFLOWS.md), [training dataset choices and next steps](docs/research/TRAINING_DATA_NEXT_STEPS.md), [detailed plan](docs/superpowers/plans/2026-11-16-multi-axis-btp-development.md), and [implementation ledger](docs/research/EXECUTION_PROGRESS.md).
 
-These notebook links are repository files; they are not claims of completed Kaggle runs. Previous notebooks remain unchanged. Subsequent A2/generated-data ablations, full confirmation/release notebooks, UI integration and a trained model card depend on validated artifacts and remain pending.
+### Kaggle publication: November 18, 2026
+
+All five new notebooks are saved privately as **version 1, without running**. The [private research source dataset](https://www.kaggle.com/datasets/cubingultimate/btp-research-source) is ready. These are accessible to the owning Kaggle account; no GPU experiments were launched.
+
+| Notebook | Purpose | Kaggle link |
+|---|---|---|
+| btp-data-audit | Separate training-corpus audit | [Open](https://www.kaggle.com/code/cubingultimate/btp-data-audit) |
+| btp-teacher-targets | Bounded teacher targets after equivalence validation | [Open](https://www.kaggle.com/code/cubingultimate/btp-teacher-targets) |
+| btp-student-pilot | CPU smoke, dry audit and opt-in A0/A1 pilot | [Open](https://www.kaggle.com/code/cubingultimate/btp-student-pilot) |
+| btp-guidance-quality | Calibrated B0/confidence/uniform comparison | [Open](https://www.kaggle.com/code/cubingultimate/btp-guidance-quality) |
+| btp-global-tiles | Native tiled inference from a trained student | [Open](https://www.kaggle.com/code/cubingultimate/btp-global-tiles) |
+
+The source snapshot corresponds to implementation commit `0b92c91`; its file hashes are inside the bundle. Kernel upload metadata is checked into `configs/kaggle-*/kernel-metadata.json`. Accelerator defaults are CPU; enable a T4 only when the relevant experiment is approved. Model weights/training data must be attached separately when those stages are ready.
+
+These saved versions are not completed Kaggle runs. Previous notebooks remain unchanged. Subsequent A2/generated-data ablations, full confirmation/release notebooks, UI integration and a trained model card depend on validated artifacts and remain pending.
 
 ### Validation and limits
 

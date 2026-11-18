@@ -16,7 +16,7 @@ The student replaces **DiffDehaze at deployment**, not HazeGen. HazeGen and the 
 
 ## Preserve the reference
 
-Existing baseline, baseline+, evaluation, offload/cache and validation notebooks are untouched. The new notebooks are repository artifacts; a repository link does not mean a Kaggle version has been published or executed.
+Existing baseline, baseline+, evaluation, offload/cache and validation notebooks are untouched. The five new notebooks were also saved privately to Kaggle as version 1 on November 18, without execution. See the README for confirmed links. A saved notebook is not a completed experiment.
 
 - [btp-data-audit](../notebooks/btp-data-audit.ipynb): training corpus integrity and evaluation overlap audit.
 - [btp-teacher-targets](../notebooks/btp-teacher-targets.ipynb): bounded targets after teacher validation.
