@@ -3,6 +3,24 @@
 A workspace for experimenting with **Learning Hazing to Dehazing** (CVPR 2025),
 with HazeGen, DiffDehaze, a live local viewer, and a Kaggle CUDA reference notebook.
 
+## OTS dataset and first student profile: November 18, 2026
+
+Created the private [BTP student training pilot](https://www.kaggle.com/datasets/cubingultimate/btp-student-training-pilot) from the user-supplied OTS_BETA archive: **90 training / 10 corpus-validation scenes**, seed42, one haze variant per source. All four haze parts were inventoried. RGB/minimum-size exclusions are recorded before sampling; native dimensions are preserved. Known NH-HAZE identity overlap checks passed. Related-viewpoint review is incomplete, so this is not generalization evidence.
+
+The approved [student pilot notebook](https://www.kaggle.com/code/cubingultimate/btp-student-pilot) **version2 completed** on one Tesla T4:
+
+| Measured item | Result |
+|---|---:|
+| Optimizer updates / microbatch exposures |100 /400|
+| Training wall time, excluding setup/export |14.205s|
+| Peak PyTorch allocated / reserved GPU memory |364.45 /400MiB|
+| Student parameters |1,724,275|
+| Exported inference checkpoint |6,964,282bytes|
+
+Checkpoint hashes, changed weights and CPU inference reload were verified. Validation is scheduled every250updates; this export is **last/unselected**, not a validated dehazing replacement. No quality gain, teacher distillation result or held-out score is claimed. No continuation or teacher-generation job has been launched.
+
+Read the [intake/profile report](docs/research/OTS_PILOT_INTAKE.md) and [saved training record](docs/research/evidence/a0-profile-kaggle-v2.json). Implementation commit: `15b4ba8`; research source dataset version2. Existing baselines remain unchanged. The repository student notebook stays opt-in; the saved Kaggle version2 reflects the explicitly approved bounded run.
+
 ## Multi-axis development: November 17, 2026
 
 Implemented the first research foundation for a compact deployment model, native-size inference, and guidance-quality experiments. **These are implemented and CPU-tested capabilities, not demonstrated restoration gains or a trained student release.**

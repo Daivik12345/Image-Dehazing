@@ -22,3 +22,23 @@ Dataset preparation, full audit and publication results are appended after verif
 - All100 paired thumbnails inspected: no obvious incorrect hazy/clean scene pairing. Repeated landmarks/viewpoints exist; exhaustive near-duplicate grouping is incomplete. This profile does not establish generalization.
 - Corpus storage/workspace estimate654,947,200 bytes. Explicit1GiB corpus budget passes dry audit; model/runtime memory is separate.
 - Private pilot bundle64,133,141 bytes; publication target cubingultimate/btp-student-training-pilot.
+
+## Publication and approved execution
+
+- Private dataset created and reports ready: https://www.kaggle.com/datasets/cubingultimate/btp-student-training-pilot (version1).
+- Source version2 published with project commit `15b4ba883b2ac624370c07d6b68cc33b10e5c732`; code pushed to GitHub.
+- `btp-student-pilot` version2 launched with the user's explicit bounded A0 approval. Notebook pins data by bundle/manifest hashes, records source commit, and exposes only CUDA device0. Kaggle accelerator allocation is T4x2, but this code uses one card.
+- Platform timeout3600seconds includes setup/export; training segment cap1200seconds/100updates remains independent and stricter.
+- Final status: COMPLETE. Saved records and checkpoint hashes verified locally.
+- Verification before launch:175 base tests passed,21 optional-runtime skips;12 isolated Torch student tests passed; two-update CPU fixture passed; Ruff lint/format passed.
+
+## Verified A0 profile result
+
+- Notebook version2 completed on Tesla T4, CUDA device0, Torch2.6.0+cu118.
+- 100 optimizer updates /400 microbatch exposures; training wall time14.205seconds, cumulative budget14.204seconds. Setup/export excluded from that training measurement.
+- GPU peak allocated382,152,192bytes (364.45MiB); reserved419,430,400bytes (400MiB), PyTorch counters only.
+- Inference checkpoint6,964,282bytes;1,724,275 parameters.
+- No validation checkpoint reached (interval250); export explicitly last/unselected. No PSNR/SSIM or generalization gain is claimed.
+- Source/data hashes match locked identities. Resume checkpoint and sidecar hash verified; inference artifact reload and finite-shape CPU check passed.
+- Local artifacts retained in weights/student-a0-profile-v2; weights are excluded from Git. Full per-update record: evidence/a0-profile-kaggle-v2.json.
+- No continuation started. A further training segment requires new explicit approval. Linear extrapolation from this short run excludes later validation/IO and is not a promised runtime.

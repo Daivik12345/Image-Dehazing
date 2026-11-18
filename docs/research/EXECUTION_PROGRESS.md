@@ -48,3 +48,14 @@ Ruling: preserve save-time accounting with a hash-bound budget sidecar. Cost: re
 - btp-data-audit, btp-teacher-targets, btp-student-pilot, btp-guidance-quality and btp-global-tiles each saved as version 1 with --no-run.
 - No GPU execution or training; old notebooks untouched. New upload metadata and links recorded in the repository.
 - Downloaded source-only dataset for verification: bundle byte-identical to upload; all 185 embedded file hashes passed.
+
+## November18 OTS intake and approved A0 execution
+
+- Imported100 deterministic source pairs from all four nested OTS haze parts;90train/10validation.113 clean sources excluded by pre-existing RGB/256 geometry requirements before selection; full exclusion inventory retained.
+- All paired file/hash/split checks and known evaluation-overlap audit pass. Thumbnail pairing review found no obvious mismatches; exhaustive related-viewpoint review remains incomplete.
+- Private pilot dataset created; source version2/code15b4ba8 published.
+- User explicitly approved first100updates or1200training seconds only. Kaggle student notebookv2 completed100updates on TeslaT4;training14.205seconds;peak allocated382152192bytes.
+- Inference6,964,282bytes/hash verified; resume checkpoint+sidecar retained. No validation at100updates, no quality claim, no continuation launched.
+- Tests before launch:175passed/21optional skips;12isolatedTorch student checks passed;Ruff passed.
+- Ruling: eligibility filtering occurs before deterministic selection, preserves exclusions, and does not inspect model outcomes. Cost: pilot represents RGB sources >=256pixels, not every source in OTS.
+- Ruling: explicitly increase corpus workspace cap to1GiB after dry estimate654,947,200bytes. Cost: greater host RAM requirement; model, precision and images unchanged.
