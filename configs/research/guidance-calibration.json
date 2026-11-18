@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "212ea9635b661ea1abf9a39d9993e2451a6427e68dbcb707b791d049cf792d04",
+  "seed": 42,
+  "window": 15,
+  "count": 20,
+  "fit_split": "train",
+  "rule": "median of per-source positive (>1e-12) variance medians, floored1e-8",
+  "epsilon_var": 0.0016402184210533438,
+  "sources": [
+    {
+      "scene_id": "reside-ots-1452",
+      "hazy_sha256": "c24dab3781f38ce2b7108ddfa03b64ab319daccc33c89dc1c38739e4cffce8a4",
+      "positive_variance_median": 0.006299272189626809
+    },
+    {
+      "scene_id": "reside-ots-6996",
+      "hazy_sha256": "2ef2943ee19bf76c25c9f187604ab4590edc87f410d2408f06e2d4e78241884b",
+      "positive_variance_median": 0.0009570548749129881
+    },
+    {
+      "scene_id": "reside-ots-831",
+      "hazy_sha256": "8beaa3fee2c96272bc52c3836cca16f53fc5350d0a3e717b1554a49f931f507a",
+      "positive_variance_median": 6.155217459170859e-05
+    },
+    {
+      "scene_id": "reside-ots-3808",
+      "hazy_sha256": "1021e2e46dd8c7c7e2ef99f9d751c000d27cc79dfa3aabf879150391dc8a58a1",
+      "positive_variance_median": 0.0015762270341769247
+    },
+    {
+      "scene_id": "reside-ots-7212",
+      "hazy_sha256": "679a3965c38e89bb50dfdc7d2efeda30099eab0ef716d313b8eb124a0a24be62",
+      "positive_variance_median": 6.326796226671649e-05
+    },
+    {
+      "scene_id": "reside-ots-1921",
+      "hazy_sha256": "cb188177e831ec03cdad3c30edcbbc98787c1df8cdc02aee3c43f6b66f64ae30",
+      "positive_variance_median": 0.002708202699334944
+    },
+    {
+      "scene_id": "reside-ots-1216",
+      "hazy_sha256": "85d2938eb971fd8bacc41f3f3a0e47b173ef9d19f1b465db987fa5d7183a186e",
+      "positive_variance_median": 0.0031244834623641027
+    },
+    {
+      "scene_id": "reside-ots-1913",
+      "hazy_sha256": "68b40bc4dee86d9ec66a4e9273fd5832618895660a7775cee816d76d76bf15f2",
+      "positive_variance_median": 0.011076044980202926
+    },
+    {
+      "scene_id": "reside-ots-8361",
+      "hazy_sha256": "1adc1a4d32b0fb335bec26943639a4bc41d3720fc36ec6467b8114435c6ffbfa",
+      "positive_variance_median": 0.0001351843932314023
+    },
+    {
+      "scene_id": "reside-ots-4597",
+      "hazy_sha256": "4530727c5705b8687b8b62064174b1bea2f436a712f0f274bd8cc944c45ede8e",
+      "positive_variance_median": 0.010423348248073616
+    },
+    {
+      "scene_id": "reside-ots-4592",
+      "hazy_sha256": "5cf02109e737c977a5631b8d490518cf6e4b97abece66603d915c16b4896aa28",
+      "positive_variance_median": 0.0005891269136960899
+    },
+    {
+      "scene_id": "reside-ots-2645",
+      "hazy_sha256": "04faa49ae2365fdda84b7c1bed53388d1ff80346b183b43440d44fae7a17ca14",
+      "positive_variance_median": 0.0013865351426273348
+    },
+    {
+      "scene_id": "reside-ots-7374",
+      "hazy_sha256": "08c05011b9f75a45b1b7f2d55e6ad5ee224fb1a21afe3ce0fb1e58a1d5224ace",
+      "positive_variance_median": 0.002575555394729652
+    },
+    {
+      "scene_id": "reside-ots-3216",
+      "hazy_sha256": "0cb8c54458f47cead863a569c144dc5f94975da10e419f8fbb077589988fe2fd",
+      "positive_variance_median": 0.0009016550555998801
+    },
+    {
+      "scene_id": "reside-ots-6294",
+      "hazy_sha256": "28369bf7e5b494883cda7af901733750af050fe144c5e4ccfad64c3a6058a356",
+      "positive_variance_median": 0.005347772026253694
+    },
+    {
+      "scene_id": "reside-ots-1614",
+      "hazy_sha256": "7c1ed8b7c506ffa34c1b367167cd156ebd2ec9d9039a5d3974175a7054da788d",
+      "positive_variance_median": 0.00013609773042361217
+    },
+    {
+      "scene_id": "reside-ots-5631",
+      "hazy_sha256": "45f6ac983fd91d1d9027f7a0d560b8054a21d058174b95f807a079b95e316b7f",
+      "positive_variance_median": 0.002038587460825414
+    },
+    {
+      "scene_id": "reside-ots-5692",
+      "hazy_sha256": "b4597b412a05c03ff0d27d0a7f0018d2bb384b481d5a7a2fc2667e0855219af0",
+      "positive_variance_median": 0.0011850600269912304
+    },
+    {
+      "scene_id": "reside-ots-7755",
+      "hazy_sha256": "5dc528747d2a681666c84274ca4565b7310c96b49131bd1b9a0886dd194b596c",
+      "positive_variance_median": 0.001704209807929763
+    },
+    {
+      "scene_id": "reside-ots-727",
+      "hazy_sha256": "85dedd007fd76caf9587f6fc52ea9ea22d1aeea79abe2de7e5fb772e88a0e9c4",
+      "positive_variance_median": 0.004179030929353858
+    }
+  ],
+  "scope": "input statistic calibration, not evidence of useful confidence"
+}

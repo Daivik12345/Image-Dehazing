@@ -1,0 +1,18 @@
+{
+  "id": "cubingultimate/btp-resident-validation",
+  "title": "btp-resident-validation",
+  "code_file": "btp-resident-validation.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "cubingultimate/btp-research-source",
+    "cubingultimate/btp-paper-weights-2",
+    "cubingultimate/btp-eval-nh-haze"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}
